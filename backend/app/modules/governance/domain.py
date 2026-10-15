@@ -243,6 +243,7 @@ class AuditAction(StrEnum):
     TASK_CONVERTED = "task.converted"
     CHAT_SESSION_DELETED = "chat_session.deleted"
     # firm governance
+    FIRM_MANAGER_APPOINTED = "firm_manager.appointed"  # first-manager bootstrap (T03)
     FIRM_MANAGER_NOMINATED = "firm_manager.nominated"
     FIRM_MANAGER_APPROVED = "firm_manager.approved"
     FIRM_MANAGER_REJECTED = "firm_manager.rejected"
@@ -256,6 +257,7 @@ class AuditAction(StrEnum):
     ERASURE_DECIDED = "erasure.decided"
     ERASURE_COMPLETED = "erasure.completed"
     # platform operations
+    FIRM_INITIALIZED = "firm.initialized"
     DOMAIN_ADDED = "domain.added"
     DOMAIN_REMOVED = "domain.removed"
     QUOTA_CHANGED = "quota.changed"
@@ -284,7 +286,7 @@ def _spec(
 
 _A, _C = AuditAction, AuditCategory
 AUDIT_CATALOG: Final[Mapping[AuditAction, ActionSpec]] = {
-    _A.ACCOUNT_ACTIVATION: _spec(_C.ACCOUNT, "failureCode", "domainApproved"),
+    _A.ACCOUNT_ACTIVATION: _spec(_C.ACCOUNT, "failureCode", "domainApproved", "personCategory"),
     _A.ACCOUNT_SIGN_IN_FAILED: _spec(_C.ACCOUNT, "failureCode", "subjectHash"),
     _A.PERMISSION_DENIED: _spec(_C.PROJECT, "capability", "routeTemplate", "errorCode"),
     _A.PROJECT_CREATED: _spec(_C.PROJECT),
@@ -319,6 +321,7 @@ AUDIT_CATALOG: Final[Mapping[AuditAction, ActionSpec]] = {
     _A.TASK_STATUS_CHANGED: _spec(_C.PROJECT, "fromStatus", "toStatus"),
     _A.TASK_CONVERTED: _spec(_C.PROJECT, "plannerTaskLinkId"),
     _A.CHAT_SESSION_DELETED: _spec(_C.PROJECT),
+    _A.FIRM_MANAGER_APPOINTED: _spec(_C.GOVERNANCE, "userId"),
     _A.FIRM_MANAGER_NOMINATED: _spec(_C.GOVERNANCE),
     _A.FIRM_MANAGER_APPROVED: _spec(_C.GOVERNANCE),
     _A.FIRM_MANAGER_REJECTED: _spec(_C.GOVERNANCE, reason_required=True),
@@ -331,6 +334,7 @@ AUDIT_CATALOG: Final[Mapping[AuditAction, ActionSpec]] = {
     _A.ERASURE_VERIFIED: _spec(_C.GOVERNANCE, "method"),
     _A.ERASURE_DECIDED: _spec(_C.GOVERNANCE, "decision", reason_required=True),
     _A.ERASURE_COMPLETED: _spec(_C.GOVERNANCE, "storesVerified", "affectedProjectCount"),
+    _A.FIRM_INITIALIZED: _spec(_C.OPERATIONAL, "stamp"),
     _A.DOMAIN_ADDED: _spec(_C.OPERATIONAL, "domain"),
     _A.DOMAIN_REMOVED: _spec(_C.OPERATIONAL, "domain"),
     _A.QUOTA_CHANGED: _spec(_C.OPERATIONAL, "meter", "fromQuota", "toQuota"),

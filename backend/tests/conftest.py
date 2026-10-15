@@ -26,10 +26,14 @@ from app.container import Container, build_container
 from app.main_api import create_api_app
 from app.modules.governance import Priority, Scheduler, Worker
 from app.modules.governance.tables import jobs
+from app.modules.organization_access import Actor, OperatorActor
+from app.platform.auth import VerifiedIdentity
 from app.platform.clock import FrozenClock
 from app.platform.db import UnitOfWork
 from app.platform.db.migrations import alembic_config
 from app.settings import Environment, Settings
+from tests.auth import AUDIENCE, ISSUER, TestTokenIssuer, TestTokenVerifier
+from tests.fixtures.synthetic.personas import FIRM_DOMAIN, OPS, TENANT_ID, Persona
 from tests.handlers import effects as effects_table
 from tests.handlers import registry as test_registry
 from tests.worker_factory import worker_for
@@ -90,6 +94,17 @@ def frozen_clock() -> FrozenClock:
     return FrozenClock(FROZEN_NOW)
 
 
+@pytest.fixture(scope="session")
+def _session_issuer() -> TestTokenIssuer:
+    return TestTokenIssuer(FrozenClock(FROZEN_NOW))  # one RSA key per session
+
+
+@pytest.fixture
+def token_issuer(_session_issuer: TestTokenIssuer, frozen_clock: FrozenClock) -> TestTokenIssuer:
+    """Mints persona tokens valid at the test's frozen time: ``token_issuer.headers_for(AVERY)``."""
+    return _session_issuer.using(frozen_clock)
+
+
 @pytest.fixture
 def settings(migrated_database: str) -> Settings:
     return Settings.model_validate(
@@ -98,6 +113,13 @@ def settings(migrated_database: str) -> Settings:
             "firm_id": "frm_test",
             "db": {"url": migrated_database},
             "crypto": {"cursor_signing_key": "test-cursor-signing-key-0123456789"},
+            "entra": {
+                "issuer": ISSUER,
+                "jwks_url": "https://login.test/keys",
+                "audience": AUDIENCE,
+                "allowed_tenant_ids": [TENANT_ID],
+                "operator_subjects": [OPS.subject],
+            },
         }
     )
 
@@ -108,6 +130,7 @@ def container(
     engine: AsyncEngine,
     db_connection: AsyncConnection,
     frozen_clock: FrozenClock,
+    token_issuer: TestTokenIssuer,
 ) -> Container:
     """Governance services whose writes roll back with the test's transaction.
 
@@ -119,7 +142,36 @@ def container(
         uow=UnitOfWork(db_connection),
         clock=frozen_clock,
         registry=test_registry,
+        token_verifier=TestTokenVerifier(token_issuer, frozen_clock),
     )
+
+
+@pytest.fixture
+async def firm(container: Container) -> str:
+    """The firm row plus its approved Team Member domain (``relaxai-admin`` bootstrap)."""
+    await container.organization.init_firm(OperatorActor.cli(), "RelaxAI Consulting")
+    await container.organization.add_approved_domain(OperatorActor.cli(), FIRM_DOMAIN)
+    return container.settings.firm_id
+
+
+def identity_of(persona: Persona, *, email_verified: bool = True) -> VerifiedIdentity:
+    return VerifiedIdentity(
+        subject=persona.subject,
+        tenant_id=TENANT_ID,
+        email=persona.email,
+        email_verified=email_verified,
+        display_name=persona.display_name,
+    )
+
+
+@pytest.fixture
+def activate(container: Container, firm: str) -> Callable[[Persona], Awaitable[Actor]]:
+    """``await activate(AVERY)``: activates a Team Member persona through the service."""
+
+    async def _activate(persona: Persona) -> Actor:
+        return await container.organization.activate_employee(identity_of(persona))
+
+    return _activate
 
 
 @pytest.fixture
@@ -142,6 +194,7 @@ async def isolated_container(
         uow=UnitOfWork(engine),
         clock=frozen_clock,
         registry=test_registry,
+        token_verifier=TestTokenVerifier(TestTokenIssuer(frozen_clock), frozen_clock),
     )
 
     async def clean() -> None:
@@ -226,9 +279,7 @@ def read_job(container: Container) -> Callable[[str], Awaitable[Any]]:
     async def _read(job_id: str) -> Any:
         async with container.uow() as tx:
             return (
-                (await tx.session.execute(select(jobs).where(jobs.c.id == job_id)))
-                .mappings()
-                .one()
+                (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
             )
 
     return _read

@@ -1,17 +1,17 @@
-"""Platform Operator routes (contract §13). T01/T02 shape: health, usage, quotas.
+"""Platform Operator routes (contract §13): health, usage, quotas, approved domains, and
+the first Firm Manager bootstrap. Every route requires ``operator.enter``.
 
-The job list, job retry/cancel, rebuilds, audit, and domains routes arrive with T32; they
-need an operator identity that T03 supplies. Until then every route here is behind the
-temporary bootstrap bearer token (see ``app/platform/http/operator_auth.py``).
+The job list, job retry/cancel, rebuilds, and audit routes arrive with T32.
 """
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from pydantic import AwareDatetime, Field
 
+from app.api.v1.deps import Operator, OperatorContext
 from app.api.v1.schemas.base import ApiModel, ApiRequest
 from app.modules.governance import (
     WORKER_PROBE,
@@ -24,12 +24,9 @@ from app.modules.governance import (
     WorkerProbePayload,
 )
 from app.platform.errors import FieldIssue, ValidationFailed
-from app.platform.http.operator import OperatorContext, operator_context
 from app.platform.ids import new_id
 
 router = APIRouter(prefix="/operator", tags=["operator"])
-
-Operator = Annotated[OperatorContext, Depends(operator_context)]
 
 
 class ServiceHealth(ApiModel):
@@ -155,7 +152,7 @@ async def set_operator_quota(meter: Meter, body: QuotaChange, ctx: Operator) -> 
         await ctx.usage.set_quota(tx, meter, body.quota)
         await ctx.audit.record(
             tx,
-            actor=ctx.actor,
+            actor=ctx.operator.actor_ref,
             action=AuditAction.QUOTA_CHANGED,
             target=TargetRef("quota_policy", meter.value),
             outcome=Outcome.SUCCEEDED,
@@ -193,3 +190,69 @@ async def probe_workers(body: ProbeRequest, ctx: Operator) -> ProbeAccepted:
             tx, WORKER_PROBE, payload, idempotency_key=idempotency_key, priority=Priority.LOW
         )
     return ProbeAccepted(job_id=job_id)
+
+
+# --------------------------------------------------------------------------- domains (T03)
+
+
+class ApprovedDomainView(ApiModel):
+    domain: str
+    created_at: AwareDatetime
+
+
+class ApprovedDomainList(ApiModel):
+    items: list[ApprovedDomainView]
+
+
+class DomainRequest(ApiRequest):
+    domain: str = Field(min_length=1, max_length=253)
+
+
+async def _domain_list(ctx: OperatorContext) -> ApprovedDomainList:
+    domains = await ctx.organization.list_approved_domains()
+    return ApprovedDomainList(
+        items=[ApprovedDomainView(domain=d.domain, created_at=d.created_at) for d in domains]
+    )
+
+
+@router.get("/domains", response_model=ApprovedDomainList, operation_id="listApprovedDomains")
+async def list_domains(ctx: Operator) -> ApprovedDomainList:
+    return await _domain_list(ctx)
+
+
+@router.post("/domains", response_model=ApprovedDomainList, operation_id="addApprovedDomain")
+async def add_domain(body: DomainRequest, ctx: Operator) -> ApprovedDomainList:
+    await ctx.organization.add_approved_domain(ctx.operator, body.domain)
+    return await _domain_list(ctx)
+
+
+@router.delete(
+    "/domains/{domain}", response_model=ApprovedDomainList, operation_id="removeApprovedDomain"
+)
+async def remove_domain(domain: str, ctx: Operator) -> ApprovedDomainList:
+    await ctx.organization.remove_approved_domain(ctx.operator, domain)
+    return await _domain_list(ctx)
+
+
+class FirstFirmManagerRequest(ApiRequest):
+    user_id: str = Field(min_length=1, max_length=40)
+
+
+class FirmManagerAppointed(ApiModel):
+    assignment_id: str
+    user_id: str
+
+
+@router.post(
+    "/firm-managers",
+    response_model=FirmManagerAppointed,
+    status_code=201,
+    operation_id="appointFirstFirmManager",
+)
+async def appoint_first_firm_manager(
+    body: FirstFirmManagerRequest, ctx: Operator
+) -> FirmManagerAppointed:
+    """Bootstrap only: ``409 ALREADY_EXISTS`` once an active Firm Manager exists (T30 owns
+    nomination and approval after that)."""
+    assignment_id = await ctx.organization.appoint_first_firm_manager(ctx.operator, body.user_id)
+    return FirmManagerAppointed(assignment_id=assignment_id, user_id=body.user_id)

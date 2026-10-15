@@ -45,10 +45,31 @@ class QdrantSettings(BaseModel):
 
 
 class EntraSettings(BaseModel):
-    tenant_id: str | None = None
+    """Microsoft Entra External ID token validation (conventions §1 decision 4).
+
+    ``authority`` is the OIDC issuer base; its ``/.well-known/openid-configuration`` names
+    the JWKS and the expected ``iss``. ``jwks_url`` and ``issuer`` override discovery.
+    Platform Operators are the External ID subjects in ``operator_subjects`` — configuration,
+    not database rows.
+    """
+
     authority: str | None = None
     audience: str | None = None
+    allowed_tenant_ids: list[str] = []
     jwks_url: str | None = None
+    issuer: str | None = None
+    operator_subjects: list[str] = []
+    clock_skew_seconds: int = Field(default=60, ge=0, le=300)
+    jwks_min_refresh_seconds: int = Field(default=60, ge=1)
+    http_timeout_seconds: float = Field(default=5.0, gt=0)
+
+    @property
+    def configured(self) -> bool:
+        return bool(
+            (self.authority or (self.jwks_url and self.issuer))
+            and self.audience
+            and self.allowed_tenant_ids
+        )
 
 
 class GraphSettings(BaseModel):
@@ -127,12 +148,6 @@ class UsageSettings(BaseModel):
     }
 
 
-class OperatorSettings(BaseModel):
-    # TEMPORARY until T03 (Entra tokens + Platform Operator role): /operator/* accepts
-    # ``Authorization: Bearer <bootstrap_token>``. Unset = every operator route is denied.
-    bootstrap_token: SecretStr | None = None
-
-
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="RELAXAI__",
@@ -143,6 +158,7 @@ class Settings(BaseSettings):
 
     environment: Environment = Environment.LOCAL
     firm_id: str = Field(default="frm_local", pattern=r"^frm_[A-Za-z0-9]+$")
+    stamp: str = Field(default="local", pattern=r"^[a-z0-9][a-z0-9\-]{0,62}$")
 
     db: DbSettings = DbSettings()
     blob: BlobSettings = BlobSettings()
@@ -156,7 +172,6 @@ class Settings(BaseSettings):
     limits: LimitsSettings = LimitsSettings()
     worker: WorkerSettings = WorkerSettings()
     usage: UsageSettings = UsageSettings()
-    operator: OperatorSettings = OperatorSettings()
 
     @model_validator(mode="after")
     def _production_requires_real_secrets(self) -> Self:
@@ -164,9 +179,11 @@ class Settings(BaseSettings):
             key = self.crypto.cursor_signing_key.get_secret_value()
             if key == LOCAL_CURSOR_KEY or len(key) < 32:
                 raise ValueError("crypto.cursor_signing_key must be a unique value of >= 32 chars")
-            token = self.operator.bootstrap_token
-            if token is not None and len(token.get_secret_value()) < 32:
-                raise ValueError("operator.bootstrap_token must be >= 32 chars")
+            if not self.entra.configured:
+                raise ValueError(
+                    "entra.authority (or jwks_url + issuer), audience, and "
+                    "allowed_tenant_ids are required in production"
+                )
         return self
 
 

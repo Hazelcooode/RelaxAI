@@ -1,6 +1,95 @@
 {
   "components": {
     "schemas": {
+      "ActivationLanding": {
+        "properties": {
+          "kind": {
+            "const": "Activation",
+            "default": "Activation",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "title": "ActivationLanding",
+        "type": "object"
+      },
+      "ApprovedDomainList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ApprovedDomainView"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ApprovedDomainList",
+        "type": "object"
+      },
+      "ApprovedDomainView": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "domain": {
+            "title": "Domain",
+            "type": "string"
+          }
+        },
+        "required": [
+          "domain",
+          "createdAt"
+        ],
+        "title": "ApprovedDomainView",
+        "type": "object"
+      },
+      "ConnectorSummary": {
+        "properties": {
+          "state": {
+            "enum": [
+              "Disconnected",
+              "Connected",
+              "Paused",
+              "Error"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "title": "ConnectorSummary",
+        "type": "object"
+      },
+      "DomainRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "domain": {
+            "maxLength": 253,
+            "minLength": 1,
+            "title": "Domain",
+            "type": "string"
+          }
+        },
+        "required": [
+          "domain"
+        ],
+        "title": "DomainRequest",
+        "type": "object"
+      },
+      "EmployeeActivationRequest": {
+        "additionalProperties": false,
+        "description": "Empty: the identity comes from the verified token.",
+        "properties": {},
+        "title": "EmployeeActivationRequest",
+        "type": "object"
+      },
       "ErrorBody": {
         "properties": {
           "allowedTransitions": {
@@ -169,6 +258,58 @@
         "title": "ErrorEnvelope",
         "type": "object"
       },
+      "FirmManagerAppointed": {
+        "properties": {
+          "assignmentId": {
+            "title": "Assignmentid",
+            "type": "string"
+          },
+          "userId": {
+            "title": "Userid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assignmentId",
+          "userId"
+        ],
+        "title": "FirmManagerAppointed",
+        "type": "object"
+      },
+      "FirmRolesView": {
+        "properties": {
+          "firmManager": {
+            "title": "Firmmanager",
+            "type": "boolean"
+          },
+          "platformOperator": {
+            "title": "Platformoperator",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "firmManager",
+          "platformOperator"
+        ],
+        "title": "FirmRolesView",
+        "type": "object"
+      },
+      "FirstFirmManagerRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Userid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId"
+        ],
+        "title": "FirstFirmManagerRequest",
+        "type": "object"
+      },
       "HaltedWorkView": {
         "properties": {
           "count": {
@@ -201,6 +342,18 @@
         "title": "HealthStatus",
         "type": "object"
       },
+      "HomeLanding": {
+        "properties": {
+          "kind": {
+            "const": "Home",
+            "default": "Home",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "title": "HomeLanding",
+        "type": "object"
+      },
       "LastBackup": {
         "properties": {
           "at": {
@@ -225,6 +378,186 @@
           "at"
         ],
         "title": "LastBackup",
+        "type": "object"
+      },
+      "Me": {
+        "description": "Contract §4.1. T05 completes ``projects`` and ``landing``; T20 ``connector``.",
+        "properties": {
+          "activation": {
+            "enum": [
+              "Active",
+              "NotActivated",
+              "Disabled"
+            ],
+            "title": "Activation",
+            "type": "string"
+          },
+          "authorizationVersion": {
+            "title": "Authorizationversion",
+            "type": "string"
+          },
+          "connector": {
+            "$ref": "#/components/schemas/ConnectorSummary"
+          },
+          "displayName": {
+            "title": "Displayname",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "firmId": {
+            "title": "Firmid",
+            "type": "string"
+          },
+          "firmRoles": {
+            "$ref": "#/components/schemas/FirmRolesView"
+          },
+          "globalCapabilities": {
+            "items": {
+              "enum": [
+                "project.create",
+                "governance.enter",
+                "operator.enter"
+              ],
+              "type": "string"
+            },
+            "title": "Globalcapabilities",
+            "type": "array"
+          },
+          "landing": {
+            "discriminator": {
+              "mapping": {
+                "Activation": "#/components/schemas/ActivationLanding",
+                "Home": "#/components/schemas/HomeLanding",
+                "Project": "#/components/schemas/ProjectLanding",
+                "ProjectChooser": "#/components/schemas/ProjectChooserLanding",
+                "ZeroState": "#/components/schemas/ZeroStateLanding"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActivationLanding"
+              },
+              {
+                "$ref": "#/components/schemas/HomeLanding"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectLanding"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectChooserLanding"
+              },
+              {
+                "$ref": "#/components/schemas/ZeroStateLanding"
+              }
+            ],
+            "title": "Landing"
+          },
+          "personCategory": {
+            "anyOf": [
+              {
+                "enum": [
+                  "TeamMember",
+                  "ClientCollaborator"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Personcategory"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/MeProject"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Userid"
+          }
+        },
+        "required": [
+          "userId",
+          "activation",
+          "personCategory",
+          "email",
+          "displayName",
+          "firmId",
+          "firmRoles",
+          "globalCapabilities",
+          "projects",
+          "landing",
+          "authorizationVersion",
+          "connector"
+        ],
+        "title": "Me",
+        "type": "object"
+      },
+      "MeProject": {
+        "properties": {
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "latestActivityAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latestactivityat"
+          },
+          "lifecycle": {
+            "enum": [
+              "Active",
+              "Archived"
+            ],
+            "title": "Lifecycle",
+            "type": "string"
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectLabel"
+          },
+          "role": {
+            "enum": [
+              "Administrator",
+              "Contributor",
+              "Viewer",
+              "ClientCollaborator"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project",
+          "role",
+          "lifecycle",
+          "capabilities",
+          "latestActivityAt"
+        ],
+        "title": "MeProject",
         "type": "object"
       },
       "Meter": {
@@ -379,6 +712,55 @@
           }
         },
         "title": "ProbeRequest",
+        "type": "object"
+      },
+      "ProjectChooserLanding": {
+        "properties": {
+          "kind": {
+            "const": "ProjectChooser",
+            "default": "ProjectChooser",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "title": "ProjectChooserLanding",
+        "type": "object"
+      },
+      "ProjectLabel": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectId",
+          "name"
+        ],
+        "title": "ProjectLabel",
+        "type": "object"
+      },
+      "ProjectLanding": {
+        "properties": {
+          "kind": {
+            "const": "Project",
+            "default": "Project",
+            "title": "Kind",
+            "type": "string"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectId"
+        ],
+        "title": "ProjectLanding",
         "type": "object"
       },
       "ProjectionLag": {
@@ -539,11 +921,30 @@
         ],
         "title": "ServiceHealth",
         "type": "object"
+      },
+      "ZeroStateLanding": {
+        "properties": {
+          "canCreateProject": {
+            "title": "Cancreateproject",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "ZeroState",
+            "default": "ZeroState",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "canCreateProject"
+        ],
+        "title": "ZeroStateLanding",
+        "type": "object"
       }
     },
     "securitySchemes": {
       "HTTPBearer": {
-        "description": "Bootstrap operator token (until T03)",
+        "description": "Microsoft Entra External ID access token",
         "scheme": "bearer",
         "type": "http"
       }
@@ -555,6 +956,329 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/activation/employee": {
+      "post": {
+        "operationId": "activateEmployee",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/EmployeeActivationRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Activate Employee",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "operationId": "getMe",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Me",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/operator/domains": {
+      "get": {
+        "operationId": "listApprovedDomains",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovedDomainList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Domains",
+        "tags": [
+          "operator"
+        ]
+      },
+      "post": {
+        "operationId": "addApprovedDomain",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DomainRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovedDomainList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Add Domain",
+        "tags": [
+          "operator"
+        ]
+      }
+    },
+    "/api/v1/operator/domains/{domain}": {
+      "delete": {
+        "operationId": "removeApprovedDomain",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "domain",
+            "required": true,
+            "schema": {
+              "title": "Domain",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovedDomainList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Domain",
+        "tags": [
+          "operator"
+        ]
+      }
+    },
+    "/api/v1/operator/firm-managers": {
+      "post": {
+        "description": "Bootstrap only: ``409 ALREADY_EXISTS`` once an active Firm Manager exists (T30 owns\nnomination and approval after that).",
+        "operationId": "appointFirstFirmManager",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FirstFirmManagerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirmManagerAppointed"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Appoint First Firm Manager",
+        "tags": [
+          "operator"
+        ]
+      }
+    },
     "/api/v1/operator/health": {
       "get": {
         "operationId": "getOperatorHealth",

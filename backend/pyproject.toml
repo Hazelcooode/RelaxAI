@@ -15,6 +15,7 @@ dependencies = [
     "python-ulid>=3.0",
     "orjson>=3.10",
     "typer>=0.15",
+    "pyjwt[crypto]>=2.10",
 ]
 
 [project.scripts]

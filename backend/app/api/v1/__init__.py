@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api.v1 import operator
+from app.api.v1 import me, operator
 from app.platform.http.errors import ErrorEnvelope
 
 ERROR_RESPONSES: dict[int | str, dict[str, object]] = {
@@ -14,6 +14,7 @@ ERROR_RESPONSES: dict[int | str, dict[str, object]] = {
 
 router = APIRouter(responses=ERROR_RESPONSES)
 
+router.include_router(me.router)
 router.include_router(operator.router)
 
 # Later tasks include their routers here, e.g. router.include_router(me.router).

@@ -41,7 +41,15 @@ def test_production_rejects_default_cursor_key(monkeypatch: pytest.MonkeyPatch) 
     with pytest.raises(ValidationError, match="cursor_signing_key"):
         Settings()
     monkeypatch.setenv("RELAXAI__CRYPTO__CURSOR_SIGNING_KEY", "x" * 40)
-    assert Settings().environment is Environment.PRODUCTION
+    with pytest.raises(ValidationError, match="entra"):
+        Settings()
+    monkeypatch.setenv("RELAXAI__ENTRA__AUTHORITY", "https://login.test/tenant/v2.0")
+    monkeypatch.setenv("RELAXAI__ENTRA__AUDIENCE", "api://relaxai")
+    monkeypatch.setenv("RELAXAI__ENTRA__ALLOWED_TENANT_IDS", '["tenant"]')
+    monkeypatch.setenv("RELAXAI__ENTRA__OPERATOR_SUBJECTS", '["sub-ops"]')
+    settings = Settings()
+    assert settings.environment is Environment.PRODUCTION
+    assert settings.entra.operator_subjects == ["sub-ops"]
 
 
 def test_firm_id_must_be_prefixed(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -7,10 +7,10 @@ These are the bootstrap path for actions an operator must be able to take withou
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Coroutine
 import sys
 import time
 import uuid
+from collections.abc import Coroutine
 
 import typer
 
@@ -23,14 +23,22 @@ from app.modules.governance import (
     WorkerProbePayload,
 )
 from app.modules.governance.jobs import WORKER_PROBE
+from app.modules.organization_access import OperatorActor
+from app.platform.errors import AppError
 from app.platform.logging import configure_logging
 from app.settings import load_settings
 
 cli = typer.Typer(name="relaxai-admin", no_args_is_help=True, add_completion=False)
 jobs_cli = typer.Typer(name="jobs", help="Job queue commands")
 usage_cli = typer.Typer(name="usage", help="Usage and quota commands")
+firm_cli = typer.Typer(name="firm", help="Firm bootstrap")
+domain_cli = typer.Typer(name="domain", help="Approved Team Member email domains")
+firm_manager_cli = typer.Typer(name="firm-manager", help="Firm Manager bootstrap")
 cli.add_typer(jobs_cli)
 cli.add_typer(usage_cli)
+cli.add_typer(firm_cli)
+cli.add_typer(domain_cli)
+cli.add_typer(firm_manager_cli)
 
 
 @cli.callback()
@@ -53,6 +61,13 @@ def _container() -> Container:
 
 def _run(coro: Coroutine[object, object, None]) -> None:
     asyncio.run(coro)
+
+
+def _fail(error: AppError) -> None:
+    typer.echo(f"error: {error.code.value}: {error.message}", err=True)
+    for detail in error.details:
+        typer.echo(f"  {detail.field or '-'}: {detail.message}", err=True)
+    raise typer.Exit(code=1)
 
 
 @jobs_cli.command("stats")
@@ -166,6 +181,98 @@ def usage_set_quota(meter: Meter, quota: int) -> None:
             async with container.uow() as tx:
                 await container.usage.set_quota(tx, meter, quota)
             typer.echo(f"{meter.value} quota set to {quota}")
+        finally:
+            await container.aclose()
+
+    _run(run())
+
+
+# --------------------------------------------------------------------------- identity (T03)
+# Every command acts as the CLI Platform Operator and writes an audit event.
+
+
+@firm_cli.command("init")
+def firm_init(name: str = typer.Option(..., help="Firm display name")) -> None:
+    """Create this stamp's firm row (idempotent)."""
+
+    async def run() -> None:
+        container = _container()
+        try:
+            firm_id = await container.organization.init_firm(OperatorActor.cli(), name)
+            typer.echo(f"firm {firm_id} ready")
+        except AppError as error:
+            _fail(error)
+        finally:
+            await container.aclose()
+
+    _run(run())
+
+
+@domain_cli.command("add")
+def domain_add(domain: str) -> None:
+    """Approve an email domain for Team Member activation."""
+
+    async def run() -> None:
+        container = _container()
+        try:
+            await container.organization.add_approved_domain(OperatorActor.cli(), domain)
+            typer.echo(f"{domain} approved")
+        except AppError as error:
+            _fail(error)
+        finally:
+            await container.aclose()
+
+    _run(run())
+
+
+@domain_cli.command("remove")
+def domain_remove(domain: str) -> None:
+    """Withdraw an approved domain (existing accounts stay active)."""
+
+    async def run() -> None:
+        container = _container()
+        try:
+            await container.organization.remove_approved_domain(OperatorActor.cli(), domain)
+            typer.echo(f"{domain} removed")
+        except AppError as error:
+            _fail(error)
+        finally:
+            await container.aclose()
+
+    _run(run())
+
+
+@domain_cli.command("list")
+def domain_list() -> None:
+    """List approved domains."""
+
+    async def run() -> None:
+        container = _container()
+        try:
+            for item in await container.organization.list_approved_domains():
+                typer.echo(f"{item.domain}  added {item.created_at.isoformat()}")
+        finally:
+            await container.aclose()
+
+    _run(run())
+
+
+@firm_manager_cli.command("appoint-first")
+def firm_manager_appoint_first(
+    email: str = typer.Option(..., help="Email of an activated Team Member"),
+) -> None:
+    """Appoint the first Firm Manager; refused once an active Firm Manager exists."""
+
+    async def run() -> None:
+        container = _container()
+        try:
+            user_id = await container.organization.user_id_for_email(email)
+            assignment_id = await container.organization.appoint_first_firm_manager(
+                OperatorActor.cli(), user_id
+            )
+            typer.echo(f"firm manager appointed ({assignment_id})")
+        except AppError as error:
+            _fail(error)
         finally:
             await container.aclose()
 
