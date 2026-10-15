@@ -9,6 +9,7 @@ from pydantic import AwareDatetime, Field
 
 from app.api.v1.deps import AppContainer, CurrentActor, Identity
 from app.api.v1.schemas.base import ApiModel, ApiRequest
+from app.modules.governance import ProjectLabel
 from app.modules.organization_access import (
     Actor,
     authorization_version,
@@ -25,11 +26,6 @@ GlobalCapabilityValue = Literal["project.create", "governance.enter", "operator.
 class FirmRolesView(ApiModel):
     firm_manager: bool
     platform_operator: bool
-
-
-class ProjectLabel(ApiModel):
-    project_id: str
-    name: str
 
 
 class MeProject(ApiModel):

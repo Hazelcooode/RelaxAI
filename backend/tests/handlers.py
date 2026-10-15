@@ -25,7 +25,8 @@ from app.modules.governance import (
 )
 
 registry = JobRegistry()
-registry.include(DEFAULT_REGISTRY)  # tests layer their handlers over the real ones
+# Tests layer their handlers over the real ones (without production sweeps).
+registry.include(DEFAULT_REGISTRY, sweeps=False)
 
 KIND_OK = "test.ok"
 KIND_FLAKY = "test.flaky"

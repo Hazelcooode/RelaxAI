@@ -148,14 +148,16 @@ class JobRegistry:
             if missing:
                 raise ValueError(f"{spec.kind} depends on unregistered kinds {sorted(missing)}")
 
-    def include(self, other: JobRegistry) -> None:
+    def include(self, other: JobRegistry, *, sweeps: bool = True) -> None:
         """Copy every handler from ``other`` into this registry.
 
         Used to compose registries — the worker entry point loads each module's ``jobs.py``,
-        and tests layer their own handlers over the real ones.
+        and tests layer their own handlers over the real ones. ``sweeps=False`` leaves out
+        periodic sweeps, so a frozen-clock test never sees a production sweep fire.
         """
         for spec in other:
-            self._add(spec)
+            if sweeps or spec.schedule is None:
+                self._add(spec)
 
     def get(self, kind: str) -> HandlerSpec | None:
         return self._specs.get(kind)

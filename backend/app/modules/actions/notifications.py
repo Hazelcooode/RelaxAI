@@ -40,7 +40,7 @@ from app.modules.governance import (
 from app.platform.clock import Clock
 from app.platform.db import Tx, UnitOfWork
 from app.platform.email import EmailMessage, EmailSender
-from app.platform.errors import NotAvailable, UpstreamError
+from app.platform.errors import MalformedRequest, NotAvailable, UpstreamError
 from app.platform.http.pagination import CursorCodec, Page
 from app.platform.ids import new_id
 from app.platform.schema import CamelModel, OmitWhenNone
@@ -262,9 +262,10 @@ class Notifications:
             conditions.append(n.read_at.is_(None))
         if cursor is not None:
             position = self._cursors.decode(cursor)
-            if not isinstance(position.k, str):
-                raise NotAvailable()
-            at = datetime.fromisoformat(position.k)
+            try:
+                at = datetime.fromisoformat(str(position.k))
+            except ValueError:
+                raise MalformedRequest() from None
             conditions.append(or_(n.created_at < at, and_(n.created_at == at, n.id < position.id)))
         async with self._uow() as tx:
             rows = (

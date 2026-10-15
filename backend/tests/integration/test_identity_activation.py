@@ -383,3 +383,11 @@ async def test_first_firm_manager_must_be_an_active_team_member(
         headers=token_issuer.headers_for(OPS),
     )
     assert r.status_code == 404
+
+
+async def test_me_shows_only_a_verified_email(
+    client: httpx.AsyncClient, token_issuer: TestTokenIssuer, firm: str
+) -> None:
+    headers = token_issuer.headers_for(AVERY, email_verified=False)
+    me = (await client.get("/api/v1/me", headers=headers)).json()
+    assert me["email"] == ""

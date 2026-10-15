@@ -478,3 +478,31 @@ async def test_list_rejects_a_cursor_from_another_group(
         )
     assert bad.value.code is ErrorCode.MALFORMED_REQUEST
     assert isinstance(page.items[0], OperationView)
+
+
+async def test_retry_needs_the_capability_and_a_failed_job(
+    container: Container, start_op: StartOp, make_worker: Callable[..., Worker],
+    avery: Actor, access: FakeProjectAccess, frozen_clock: FrozenClock,
+) -> None:  # fmt: skip
+    # An operation its module failed directly has no job to re-run: no Retry offered.
+    direct = await start_op(avery)
+    async with container.uow() as tx:
+        await container.operations.finish(tx, direct, outcome="Failed", failure_code="Timeout")
+    assert "Retry" not in (await container.operations.get_for(avery, direct)).available_actions
+
+    # A capability audience: the initiator must still hold the capability to retry.
+    shared = await start_op(
+        avery, kind=KIND_FLAKY, payload=FlakyPayload(fail_times=99),
+        audience=Audience.holders_of("document.upload", PROJECT),
+    )  # fmt: skip
+    worker = make_worker()
+    for _ in range(3):
+        await worker.run_once()
+        frozen_clock.advance(timedelta(minutes=10))
+    access.holders.add((avery.user_id, "document.upload", PROJECT))
+    assert "Retry" in (await container.operations.get_for(avery, shared)).available_actions
+    access.holders.clear()
+    assert "Retry" not in (await container.operations.get_for(avery, shared)).available_actions
+    with pytest.raises(AppError) as refused:
+        await container.operations.retry(avery, shared, str(uuid.uuid4()))
+    assert refused.value.code is ErrorCode.INVALID_TRANSITION

@@ -448,3 +448,25 @@ async def test_mark_read_of_someone_elses_notification_is_unavailable(
     )
     assert r.status_code == 404
     assert r.json()["error"]["code"] == "NOT_AVAILABLE"
+
+
+async def test_a_tampered_cursor_is_malformed(
+    client: httpx.AsyncClient, token_issuer: TestTokenIssuer, avery: Actor
+) -> None:
+    r = await client.get(
+        "/api/v1/notifications",
+        params={"cursor": "e30.AAAA"},
+        headers=token_issuer.headers_for(AVERY),
+    )
+    assert r.status_code == 400
+    assert r.json()["error"]["code"] == "MALFORMED_REQUEST"
+
+
+def test_convention_rows_expire_through_a_production_sweep() -> None:
+    from app.modules.governance.jobs import CONVENTIONS_EXPIRY
+    from app.modules.governance.registry import DEFAULT_REGISTRY
+    from tests.handlers import registry as test_registry
+
+    spec = DEFAULT_REGISTRY[CONVENTIONS_EXPIRY]
+    assert spec.schedule is not None
+    assert test_registry.get(CONVENTIONS_EXPIRY) is None  # frozen-clock tests stay sweep-free

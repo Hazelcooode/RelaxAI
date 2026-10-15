@@ -326,7 +326,8 @@ class OrganizationAccess:
             user_id=None,
             firm_id=self._firm_id,
             subject=identity.subject,
-            email=identity.email,
+            # Contract §4.1: the actor's own *verified* email only.
+            email=identity.email if identity.email_verified else None,
             display_name=identity.display_name,
             person_category=None,
             activation=Activation.NOT_ACTIVATED,

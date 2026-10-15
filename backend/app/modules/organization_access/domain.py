@@ -157,7 +157,12 @@ def employee_activation_failure(
     """``EmployeeActivationPolicy``: a verified email under an approved domain (IAM-01)."""
     if not identity.email_verified or identity.email is None:
         return ActivationFailure.EMAIL_NOT_VERIFIED
-    if identity.email_domain not in approved_domains:
+    try:
+        # Approved domains are stored in IDNA (punycode) form; compare like with like.
+        domain = normalize_domain(identity.email_domain or "")
+    except ValueError:
+        return ActivationFailure.DOMAIN_NOT_APPROVED
+    if domain not in approved_domains:
         return ActivationFailure.DOMAIN_NOT_APPROVED
     return None
 

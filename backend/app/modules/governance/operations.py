@@ -801,15 +801,12 @@ class Operations:
     ) -> list[AvailableAction]:
         state = OperationState(row["state"])
         actions: list[AvailableAction] = []
-        if state is OperationState.FAILED and row["failure_retryable"]:
-            holder = row["initiated_by_user_id"] == actor.user_id or (
-                row["audience_action_code"] is not None
-                and await self.access.holds(
-                    actor, row["audience_action_code"], row["audience_project_id"]
-                )
-            )
-            if holder:
-                actions.append(AvailableAction.RETRY)
+        if (
+            state is OperationState.FAILED
+            and row["failure_retryable"]
+            and await self._may_retry(actor, row)
+        ):
+            actions.append(AvailableAction.RETRY)
         if state is OperationState.WAITING_FOR_USER and destination is not None:
             actions.append(
                 AvailableAction.REAUTHORIZE
@@ -821,6 +818,23 @@ class Operations:
         if _dismissible(row):
             actions.append(AvailableAction.DISMISS)
         return actions
+
+    async def _may_retry(self, actor: OperationActor, row: Any) -> bool:
+        """Retry re-runs the owning command: the actor must *currently* hold its capability
+        (the initiator too, once a capability is recorded), and there must be a failed job
+        to re-run — an operation failed directly by its module has none."""
+        code = row["audience_action_code"]
+        if code is not None:
+            allowed = await self.access.holds(actor, code, row["audience_project_id"])
+        else:
+            allowed = row["initiated_by_user_id"] == actor.user_id
+        if not allowed:
+            return False
+        async with self._uow() as tx:
+            failed_job = select(jobs.c.id).where(
+                jobs.c.operation_id == row["id"], jobs.c.state == JobState.FAILED.value
+            )
+            return bool((await tx.session.execute(select(exists(failed_job)))).scalar())
 
     async def _view(self, actor: OperationActor, row: Any) -> OperationView:
         op_type = OperationType(row["type"])
