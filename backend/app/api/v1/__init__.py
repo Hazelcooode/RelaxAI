@@ -1,0 +1,16 @@
+"""``/api/v1`` route adapters: parse -> call one service method -> map the result."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter
+
+from app.platform.http.errors import ErrorEnvelope
+
+ERROR_RESPONSES: dict[int | str, dict[str, object]] = {
+    "4XX": {"model": ErrorEnvelope, "description": "Error envelope (contract §2)"},
+    "5XX": {"model": ErrorEnvelope, "description": "Error envelope (contract §2)"},
+}
+
+router = APIRouter(responses=ERROR_RESPONSES)
+
+# Later tasks include their routers here, e.g. router.include_router(me.router).

@@ -1,0 +1,297 @@
+{
+  "components": {
+    "schemas": {
+      "ErrorBody": {
+        "properties": {
+          "allowedTransitions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Allowedtransitions"
+          },
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "correlationId": {
+            "title": "Correlationid",
+            "type": "string"
+          },
+          "current": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Authoritative resource on VERSION_CONFLICT, CHAT_SCOPE_LOCKED, UNDO_EXPIRED, REVIEW_ALREADY_RESOLVED.",
+            "title": "Current"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Details"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "retryAfterSeconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Retryafterseconds"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "correlationId"
+        ],
+        "title": "ErrorBody",
+        "type": "object"
+      },
+      "ErrorCode": {
+        "enum": [
+          "MALFORMED_REQUEST",
+          "UNAUTHENTICATED",
+          "ACCOUNT_NOT_ACTIVATED",
+          "CAPABILITY_DENIED",
+          "GOVERNANCE_ONLY",
+          "NOT_AVAILABLE",
+          "VERSION_CONFLICT",
+          "PROJECT_READ_ONLY",
+          "INVALID_TRANSITION",
+          "FINAL_ADMINISTRATOR",
+          "FINAL_FIRM_MANAGER",
+          "CHAT_SCOPE_LOCKED",
+          "REVIEW_ALREADY_RESOLVED",
+          "UNDO_EXPIRED",
+          "ALREADY_EXISTS",
+          "OPERATION_NOT_DISMISSIBLE",
+          "ARCHIVAL_NOT_CANDIDATE",
+          "CONNECTOR_CONSENT_REQUIRED",
+          "CONNECTOR_NOT_OWNER",
+          "PLANNER_NOT_CONNECTED",
+          "PREVIEW_STALE",
+          "FILE_TOO_LARGE",
+          "UNSUPPORTED_FORMAT",
+          "VALIDATION_FAILED",
+          "SCOPE_INVALID",
+          "CONFIRMATION_MISMATCH",
+          "REASON_REQUIRED",
+          "REASON_CONTAINS_PERSONAL_DATA",
+          "ASSIGNEE_INELIGIBLE",
+          "VISIBILITY_CONSTRAINT",
+          "IDEMPOTENCY_KEY_REUSED",
+          "ACTIVATION_DOMAIN_NOT_APPROVED",
+          "EMAIL_NOT_VERIFIED",
+          "INVITATION_INVALID",
+          "INVITATION_EMAIL_MISMATCH",
+          "PRECONDITION_REQUIRED",
+          "RATE_LIMITED",
+          "RETRIEVAL_UNAVAILABLE",
+          "INDEX_REBUILDING",
+          "UPSTREAM_UNAVAILABLE",
+          "QUOTA_EXCEEDED",
+          "INTERNAL_ERROR"
+        ],
+        "title": "ErrorCode",
+        "type": "string"
+      },
+      "ErrorDetail": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Field"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorDetail",
+        "type": "object"
+      },
+      "ErrorEnvelope": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBody"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "title": "ErrorEnvelope",
+        "type": "object"
+      },
+      "HealthStatus": {
+        "properties": {
+          "status": {
+            "const": "ok",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "HealthStatus",
+        "type": "object"
+      },
+      "ReadinessChecks": {
+        "properties": {
+          "database": {
+            "enum": [
+              "ok",
+              "unavailable"
+            ],
+            "title": "Database",
+            "type": "string"
+          },
+          "migrations": {
+            "enum": [
+              "ok",
+              "pending",
+              "unknown"
+            ],
+            "title": "Migrations",
+            "type": "string"
+          }
+        },
+        "required": [
+          "database",
+          "migrations"
+        ],
+        "title": "ReadinessChecks",
+        "type": "object"
+      },
+      "ReadinessStatus": {
+        "properties": {
+          "checks": {
+            "$ref": "#/components/schemas/ReadinessChecks"
+          },
+          "status": {
+            "enum": [
+              "ready",
+              "unavailable"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "checks"
+        ],
+        "title": "ReadinessStatus",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "RelaxAI API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/healthz": {
+      "get": {
+        "description": "The process is alive. Never touches dependencies.",
+        "operationId": "getHealthz",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Healthz",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/readyz": {
+      "get": {
+        "description": "The database is reachable and the Alembic head is applied.",
+        "operationId": "getReadyz",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessStatus"
+                }
+              }
+            },
+            "description": "Not ready"
+          }
+        },
+        "summary": "Readyz",
+        "tags": [
+          "health"
+        ]
+      }
+    }
+  }
+}
