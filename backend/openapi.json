@@ -169,6 +169,24 @@
         "title": "ErrorEnvelope",
         "type": "object"
       },
+      "HaltedWorkView": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "count"
+        ],
+        "title": "HaltedWorkView",
+        "type": "object"
+      },
       "HealthStatus": {
         "properties": {
           "status": {
@@ -181,6 +199,263 @@
           "status"
         ],
         "title": "HealthStatus",
+        "type": "object"
+      },
+      "LastBackup": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "verifiedRestoreAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verifiedrestoreat"
+          }
+        },
+        "required": [
+          "at"
+        ],
+        "title": "LastBackup",
+        "type": "object"
+      },
+      "Meter": {
+        "enum": [
+          "AiTokensIn",
+          "AiTokensOut",
+          "EmbeddingTokens",
+          "OcrPages",
+          "BlobBytes"
+        ],
+        "title": "Meter",
+        "type": "string"
+      },
+      "MeterUsageView": {
+        "properties": {
+          "estimatedEur": {
+            "title": "Estimatedeur",
+            "type": "number"
+          },
+          "meter": {
+            "$ref": "#/components/schemas/Meter"
+          },
+          "quota": {
+            "title": "Quota",
+            "type": "integer"
+          },
+          "used": {
+            "title": "Used",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "meter",
+          "used",
+          "quota",
+          "estimatedEur"
+        ],
+        "title": "MeterUsageView",
+        "type": "object"
+      },
+      "OperatorHealth": {
+        "description": "Contract §13 ``/operator/health``. ``degraded`` is true while telemetry delivery is off.",
+        "properties": {
+          "degraded": {
+            "title": "Degraded",
+            "type": "boolean"
+          },
+          "lastBackup": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LastBackup"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "projectionLag": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectionLag"
+            },
+            "title": "Projectionlag",
+            "type": "array"
+          },
+          "queue": {
+            "items": {
+              "$ref": "#/components/schemas/QueueHealth"
+            },
+            "title": "Queue",
+            "type": "array"
+          },
+          "services": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceHealth"
+            },
+            "title": "Services",
+            "type": "array"
+          }
+        },
+        "required": [
+          "services",
+          "queue",
+          "projectionLag",
+          "lastBackup",
+          "degraded"
+        ],
+        "title": "OperatorHealth",
+        "type": "object"
+      },
+      "OperatorUsage": {
+        "properties": {
+          "haltedWork": {
+            "items": {
+              "$ref": "#/components/schemas/HaltedWorkView"
+            },
+            "title": "Haltedwork",
+            "type": "array"
+          },
+          "meters": {
+            "items": {
+              "$ref": "#/components/schemas/MeterUsageView"
+            },
+            "title": "Meters",
+            "type": "array"
+          },
+          "period": {
+            "title": "Period",
+            "type": "string"
+          },
+          "planningCeilingsEur": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Planningceilingseur",
+            "type": "object"
+          }
+        },
+        "required": [
+          "period",
+          "meters",
+          "haltedWork",
+          "planningCeilingsEur"
+        ],
+        "title": "OperatorUsage",
+        "type": "object"
+      },
+      "ProbeAccepted": {
+        "properties": {
+          "jobId": {
+            "title": "Jobid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "jobId"
+        ],
+        "title": "ProbeAccepted",
+        "type": "object"
+      },
+      "ProbeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "stepDelayMs": {
+            "default": 500,
+            "title": "Stepdelayms",
+            "type": "integer"
+          },
+          "steps": {
+            "default": 3,
+            "title": "Steps",
+            "type": "integer"
+          }
+        },
+        "title": "ProbeRequest",
+        "type": "object"
+      },
+      "ProjectionLag": {
+        "properties": {
+          "lagSeconds": {
+            "title": "Lagseconds",
+            "type": "number"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectId",
+          "lagSeconds"
+        ],
+        "title": "ProjectionLag",
+        "type": "object"
+      },
+      "QueueHealth": {
+        "properties": {
+          "depth": {
+            "title": "Depth",
+            "type": "integer"
+          },
+          "failed24h": {
+            "title": "Failed24H",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "oldestAgeSeconds": {
+            "title": "Oldestageseconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "depth",
+          "oldestAgeSeconds",
+          "failed24h"
+        ],
+        "title": "QueueHealth",
+        "type": "object"
+      },
+      "QuotaChange": {
+        "additionalProperties": false,
+        "properties": {
+          "quota": {
+            "title": "Quota",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "quota"
+        ],
+        "title": "QuotaChange",
+        "type": "object"
+      },
+      "QuotaChanged": {
+        "properties": {
+          "meter": {
+            "$ref": "#/components/schemas/Meter"
+          },
+          "quota": {
+            "title": "Quota",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "meter",
+          "quota"
+        ],
+        "title": "QuotaChanged",
         "type": "object"
       },
       "ReadinessChecks": {
@@ -230,6 +505,47 @@
         ],
         "title": "ReadinessStatus",
         "type": "object"
+      },
+      "ServiceHealth": {
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "Ok",
+              "Degraded",
+              "Unavailable"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "status"
+        ],
+        "title": "ServiceHealth",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "description": "Bootstrap operator token (until T03)",
+        "scheme": "bearer",
+        "type": "http"
       }
     }
   },
@@ -239,6 +555,221 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/operator/health": {
+      "get": {
+        "operationId": "getOperatorHealth",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorHealth"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Operator Health",
+        "tags": [
+          "operator"
+        ]
+      }
+    },
+    "/api/v1/operator/jobs/probe": {
+      "post": {
+        "description": "Enqueue a harmless job that reports progress; watching it run proves the worker loop.\n\n``relaxai-admin jobs probe`` calls this. Remove it once T32's job list exists.",
+        "operationId": "probeWorkers",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProbeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProbeAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Probe Workers",
+        "tags": [
+          "operator"
+        ]
+      }
+    },
+    "/api/v1/operator/quotas/{meter}": {
+      "put": {
+        "operationId": "setOperatorQuota",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "meter",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Meter"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuotaChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuotaChanged"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Operator Quota",
+        "tags": [
+          "operator"
+        ]
+      }
+    },
+    "/api/v1/operator/usage": {
+      "get": {
+        "operationId": "getOperatorUsage",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorUsage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Operator Usage",
+        "tags": [
+          "operator"
+        ]
+      }
+    },
     "/healthz": {
       "get": {
         "description": "The process is alive. Never touches dependencies.",

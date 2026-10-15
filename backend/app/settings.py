@@ -89,6 +89,50 @@ class LimitsSettings(BaseModel):
     page_max_limit: int = Field(default=100, ge=1)
 
 
+class WorkerSettings(BaseModel):
+    concurrency: int = Field(default=4, ge=1, description="Jobs one worker process runs at once")
+    poll_interval_seconds: float = Field(default=1.0, gt=0)
+    shutdown_grace_seconds: float = Field(default=30.0, ge=0)
+    reservation_ttl_seconds: int = Field(default=900, ge=1)
+
+
+class UsageSettings(BaseModel):
+    """Default quotas and planning prices. ``quota_policies`` rows override the quotas.
+
+    Prices are planning estimates (EUR per unit) used only for ``estimatedEur``; they are
+    not billing data. Defaults keep paid AI/OCR work inside the PRD's EUR 15 ceiling.
+    """
+
+    period: Literal["Total", "Monthly"] = "Total"
+    default_quotas: dict[str, int] = {
+        "AiTokensIn": 20_000_000,
+        "AiTokensOut": 4_000_000,
+        "EmbeddingTokens": 20_000_000,
+        "OcrPages": 2_000,
+        "BlobBytes": 5 * 1024**3,
+    }
+    unit_price_eur: dict[str, float] = {
+        "AiTokensIn": 0.15 / 1_000_000,
+        "AiTokensOut": 0.60 / 1_000_000,
+        "EmbeddingTokens": 0.02 / 1_000_000,
+        "OcrPages": 1.50 / 1_000,
+        "BlobBytes": 0.02 / 1024**3,
+    }
+    planning_ceilings_eur: dict[str, float] = {
+        "VmDiskNetworking": 35,
+        "AzureOpenAiDocumentIntelligence": 15,
+        "BlobBackupsKeyVaultMonitor": 5,
+        "DomainDeployment": 15,
+        "Contingency": 30,
+    }
+
+
+class OperatorSettings(BaseModel):
+    # TEMPORARY until T03 (Entra tokens + Platform Operator role): /operator/* accepts
+    # ``Authorization: Bearer <bootstrap_token>``. Unset = every operator route is denied.
+    bootstrap_token: SecretStr | None = None
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="RELAXAI__",
@@ -110,6 +154,9 @@ class Settings(BaseSettings):
     crypto: CryptoSettings = CryptoSettings()
     telemetry: TelemetrySettings = TelemetrySettings()
     limits: LimitsSettings = LimitsSettings()
+    worker: WorkerSettings = WorkerSettings()
+    usage: UsageSettings = UsageSettings()
+    operator: OperatorSettings = OperatorSettings()
 
     @model_validator(mode="after")
     def _production_requires_real_secrets(self) -> Self:
@@ -117,6 +164,9 @@ class Settings(BaseSettings):
             key = self.crypto.cursor_signing_key.get_secret_value()
             if key == LOCAL_CURSOR_KEY or len(key) < 32:
                 raise ValueError("crypto.cursor_signing_key must be a unique value of >= 32 chars")
+            token = self.operator.bootstrap_token
+            if token is not None and len(token.get_secret_value()) < 32:
+                raise ValueError("operator.bootstrap_token must be >= 32 chars")
         return self
 
 

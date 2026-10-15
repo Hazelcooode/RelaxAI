@@ -130,7 +130,7 @@ def test_migrations_are_reversible(migrated_database: str) -> None:
 
 
 async def test_single_alembic_head(engine: AsyncEngine) -> None:
-    assert expected_heads() == {"0001_platform"}
+    assert expected_heads() == {"0002_governance"}
     async with engine.connect() as conn:
         applied = (await conn.execute(text("SELECT version_num FROM alembic_version"))).scalars()
-        assert set(applied) == {"0001_platform"}
+        assert set(applied) == {"0002_governance"}

@@ -7,12 +7,12 @@ from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from pydantic import BaseModel, ConfigDict, Field
-from pydantic.alias_generators import to_camel
+from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import JSONResponse, Response
 
 from app.platform.errors import DEFAULT_MESSAGES, HTTP_STATUS, AppError, ErrorCode, FieldIssue
+from app.platform.schema import CamelModel
 
 _REQUEST_SOURCES = {"body", "query", "path", "header", "cookie"}
 # Pydantic error types whose message may embed caller-supplied text.
@@ -20,19 +20,13 @@ _UNSAFE_MESSAGE_TYPES = {"value_error", "assertion_error", "json_invalid"}
 _GENERIC_FIELD_MESSAGE = "Invalid value."
 
 
-class _EnvelopeModel(BaseModel):
-    model_config = ConfigDict(
-        alias_generator=to_camel, populate_by_name=True, serialize_by_alias=True
-    )
-
-
-class ErrorDetail(_EnvelopeModel):
+class ErrorDetail(CamelModel):
     field: str | None = None
     code: str
     message: str
 
 
-class ErrorBody(_EnvelopeModel):
+class ErrorBody(CamelModel):
     code: ErrorCode
     message: str
     correlation_id: str
@@ -46,7 +40,7 @@ class ErrorBody(_EnvelopeModel):
     allowed_transitions: list[str] | None = None
 
 
-class ErrorEnvelope(_EnvelopeModel):
+class ErrorEnvelope(CamelModel):
     error: ErrorBody
 
 

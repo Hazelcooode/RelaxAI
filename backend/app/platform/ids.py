@@ -14,6 +14,8 @@ PREFIXES: frozenset[str] = frozenset(
         "aud", "job", "op", "und", "rvw", "cnd", "era", "rvl", "fmn",
         # api-contract.md §1.4 additions
         "sug", "idc", "ppl",
+        # internal (T02): usage quota reservations
+        "rsv",
     }
 )  # fmt: skip
 

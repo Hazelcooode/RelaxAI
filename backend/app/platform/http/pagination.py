@@ -16,10 +16,9 @@ from typing import Annotated, Generic, TypeVar
 
 import orjson
 from fastapi import Query
-from pydantic import BaseModel, ConfigDict
-from pydantic.alias_generators import to_camel
 
 from app.platform.errors import MalformedRequest
+from app.platform.schema import CamelModel
 
 type SortKey = str | int | float | bool | list[str | int | float | bool | None] | None
 
@@ -29,11 +28,7 @@ MAX_CURSOR_LENGTH = 1024
 _MAC_BYTES = 16
 
 
-class Page(BaseModel, Generic[T]):  # noqa: UP046 - pydantic generic naming
-    model_config = ConfigDict(
-        alias_generator=to_camel, populate_by_name=True, serialize_by_alias=True
-    )
-
+class Page(CamelModel, Generic[T]):  # noqa: UP046 - pydantic generic naming
     items: list[T]
     next_cursor: str | None = None
 
