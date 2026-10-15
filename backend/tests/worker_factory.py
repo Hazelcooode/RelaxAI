@@ -33,5 +33,6 @@ def worker_for(
         owner=owner,
         kinds=kinds,
         rng=random.Random(seed),  # noqa: S311 - jitter only
+        services=container.services,
         **kwargs,
     )

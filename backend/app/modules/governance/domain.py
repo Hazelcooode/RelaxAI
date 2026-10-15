@@ -16,7 +16,7 @@ from typing import Any, Final, Literal
 
 from pydantic import BaseModel
 
-from app.platform.schema import CamelModel
+from app.platform.schema import OmitWhenNone
 
 # --------------------------------------------------------------------------- jobs
 
@@ -63,8 +63,10 @@ def retry_delay(
     return min(timedelta(seconds=base * jitter), BACKOFF_CAP)
 
 
-class Destination(CamelModel):
-    """An authorized frontend route (contract §3 ``Destination``)."""
+class Destination(OmitWhenNone):
+    """An authorized frontend route (contract §3 ``Destination``; ``projectId?``)."""
+
+    omit_when_none = frozenset({"project_id"})
 
     kind: str
     project_id: str | None = None
@@ -139,7 +141,9 @@ def _normalise_key(key: str) -> str:
     return key.replace("_", "").replace("-", "").lower()
 
 
-def check_job_payload(payload: BaseModel, screen: PersonalDataScreen = personal_data_screen) -> None:
+def check_job_payload(
+    payload: BaseModel, screen: PersonalDataScreen = personal_data_screen
+) -> None:
     """Raise ``ValueError`` if a payload could carry content, credentials, or personal data."""
 
     def walk(value: Any, path: str) -> None:
@@ -278,9 +282,7 @@ class ActionSpec:
 _COMMON_FACTS: Final = frozenset({"operationId", "jobId", "count", "correlationId"})
 
 
-def _spec(
-    category: AuditCategory, *facts: str, reason_required: bool = False
-) -> ActionSpec:
+def _spec(category: AuditCategory, *facts: str, reason_required: bool = False) -> ActionSpec:
     return ActionSpec(category, _COMMON_FACTS | frozenset(facts), reason_required)
 
 
@@ -368,7 +370,9 @@ class ActorRef:
 
     @property
     def stored_label(self) -> str:
-        return CLIENT_COLLABORATOR_LABEL if self.kind is ActorKind.CLIENT_COLLABORATOR else self.label
+        return (
+            CLIENT_COLLABORATOR_LABEL if self.kind is ActorKind.CLIENT_COLLABORATOR else self.label
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -441,5 +445,7 @@ def actor_columns(actor: ActorRef | SystemActor) -> tuple[AuditActorKind, str | 
     """(actor_kind, actor_user_id, actor_label) as stored and returned (contract ``AuditEvent``)."""
     if isinstance(actor, SystemActor):
         return "System", None, actor.label
-    kind: AuditActorKind = "PlatformOperator" if actor.kind is ActorKind.PLATFORM_OPERATOR else "User"
+    kind: AuditActorKind = (
+        "PlatformOperator" if actor.kind is ActorKind.PLATFORM_OPERATOR else "User"
+    )
     return kind, actor.user_id, actor.stored_label

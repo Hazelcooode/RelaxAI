@@ -24,6 +24,7 @@ from app.modules.governance.context import (
     JobContext,
     LeaseLostError,
     RetryableError,
+    ServiceDirectory,
     TerminalError,
     WaitingForUserSignal,
 )
@@ -123,6 +124,7 @@ class Worker:
         kinds: list[str] | None = None,
         rng: random.Random | None = None,
         scheduler: Scheduler | None = None,
+        services: ServiceDirectory | None = None,
     ) -> None:
         self.scheduler = scheduler or Scheduler(
             store=store, queue=queue, usage=usage, registry=registry, clock=clock, uow=uow
@@ -139,6 +141,7 @@ class Worker:
         self.owner = owner or default_owner()
         self._kinds = kinds
         self._rng = rng or random.Random()  # noqa: S311 - jitter only
+        self._services = services or ServiceDirectory()
 
     # ------------------------------------------------------------------ step-wise (tests)
 
@@ -242,7 +245,9 @@ class Worker:
         """Run the handler once; return the recorded error code (None on success)."""
         spec = self._registry[job.kind]
         if spec.paid and await self._usage.exhausted(spec.meters) is not None:
-            await self._store.fail(job.id, self.owner, QUOTA_EXCEEDED_CODE, count_attempt=False)
+            await self._store.fail(
+                job.id, self.owner, QUOTA_EXCEEDED_CODE, count_attempt=False, retryable=True
+            )
             return QUOTA_EXCEEDED_CODE
         try:
             payload = spec.payload.model_validate(job.payload)
@@ -261,6 +266,7 @@ class Worker:
             _store=self._store,
             _queue=self._queue,
             _owner=self.owner,
+            _services=self._services,
         )
         try:
             await asyncio.wait_for(spec.fn(ctx, payload), timeout=spec.timeout.total_seconds())
@@ -272,7 +278,7 @@ class Worker:
             await self._store.fail(job.id, self.owner, exc.code)
             return exc.code
         except QuotaExceeded:
-            await self._store.fail(job.id, self.owner, QUOTA_EXCEEDED_CODE)
+            await self._store.fail(job.id, self.owner, QUOTA_EXCEEDED_CODE, retryable=True)
             return QUOTA_EXCEEDED_CODE
         except RetryableError as exc:
             return await self._retry_or_fail(job, exc.code, exc.retry_after)
@@ -296,7 +302,8 @@ class Worker:
     ) -> str:
         failed_attempts = job.attempts + 1
         if failed_attempts >= job.max_attempts:
-            await self._store.fail(job.id, self.owner, code)
+            # Transient causes exhausted their attempts: a person may retry later.
+            await self._store.fail(job.id, self.owner, code, retryable=True)
             return code
         delay = retry_delay(failed_attempts, rng=self._rng, retry_after=retry_after)
         await self._store.retry(job.id, self.owner, code, self._clock.now() + delay)

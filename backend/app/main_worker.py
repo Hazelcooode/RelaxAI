@@ -21,7 +21,7 @@ log = logging.getLogger("relaxai.worker")
 
 # Every module's handlers must be imported before the worker starts, so the registry is
 # complete. Later tasks add their module here.
-JOB_MODULES = ("app.modules.governance.jobs",)
+JOB_MODULES = ("app.modules.governance.jobs", "app.modules.actions.jobs")
 
 
 def register_jobs(modules: tuple[str, ...] = JOB_MODULES) -> None:

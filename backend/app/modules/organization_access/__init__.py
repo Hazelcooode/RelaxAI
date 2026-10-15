@@ -14,12 +14,14 @@ from app.modules.organization_access.domain import (
     global_capabilities,
 )
 from app.modules.organization_access.service import (
+    AccountContact,
     ApprovedDomain,
     AuditRateLimiter,
     OrganizationAccess,
 )
 
 __all__ = [
+    "AccountContact",
     "Activation",
     "Actor",
     "ApprovedDomain",

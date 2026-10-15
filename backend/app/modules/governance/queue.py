@@ -10,6 +10,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 
 from app.modules.governance.domain import JobState, Priority, check_job_payload
+from app.modules.governance.operations import project_job_event
 from app.modules.governance.registry import JobRegistry
 from app.modules.governance.tables import jobs
 from app.platform.clock import Clock
@@ -32,7 +33,9 @@ class QueueStat:
 
 
 class JobQueue:
-    def __init__(self, *, uow: UnitOfWork, clock: Clock, registry: JobRegistry, firm_id: str) -> None:
+    def __init__(
+        self, *, uow: UnitOfWork, clock: Clock, registry: JobRegistry, firm_id: str
+    ) -> None:
         self._uow = uow
         self._clock = clock
         self._registry = registry
@@ -107,9 +110,12 @@ class JobQueue:
                 waiting_destination=None,
                 updated_at=now,
             )
-            .returning(jobs.c.id)
+            .returning(jobs.c.id, jobs.c.operation_id)
         )
-        if result.scalar_one_or_none() is None:
+        resumed = result.one_or_none()
+        if resumed is not None and resumed.operation_id is not None:
+            await project_job_event(tx, resumed.operation_id, "requeued", now=now)
+        if resumed is None:
             state = (
                 await tx.session.execute(select(jobs.c.state).where(jobs.c.id == job_id))
             ).scalar_one_or_none()

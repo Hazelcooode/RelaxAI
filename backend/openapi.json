@@ -13,6 +13,15 @@
         "title": "ActivationLanding",
         "type": "object"
       },
+      "ActivityGroup": {
+        "enum": [
+          "Running",
+          "NeedsAttention",
+          "RecentlyCompleted"
+        ],
+        "title": "ActivityGroup",
+        "type": "string"
+      },
       "ApprovedDomainList": {
         "properties": {
           "items": {
@@ -48,6 +57,17 @@
         "title": "ApprovedDomainView",
         "type": "object"
       },
+      "AvailableAction": {
+        "enum": [
+          "Retry",
+          "Reauthorize",
+          "Review",
+          "Open",
+          "Dismiss"
+        ],
+        "title": "AvailableAction",
+        "type": "string"
+      },
       "ConnectorSummary": {
         "properties": {
           "state": {
@@ -65,6 +85,36 @@
           "state"
         ],
         "title": "ConnectorSummary",
+        "type": "object"
+      },
+      "Destination": {
+        "description": "An authorized frontend route (contract §3 ``Destination``; ``projectId?``).",
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "projectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projectid"
+          }
+        },
+        "required": [
+          "kind",
+          "path"
+        ],
+        "title": "Destination",
         "type": "object"
       },
       "DomainRequest": {
@@ -256,6 +306,29 @@
           "error"
         ],
         "title": "ErrorEnvelope",
+        "type": "object"
+      },
+      "FailureView": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "workRetained": {
+            "title": "Workretained",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "workRetained"
+        ],
+        "title": "FailureView",
         "type": "object"
       },
       "FirmManagerAppointed": {
@@ -598,6 +671,354 @@
         "title": "MeterUsageView",
         "type": "object"
       },
+      "NotificationPage": {
+        "description": "``Page<Notification> & { unreadCount }``.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          },
+          "unreadCount": {
+            "title": "Unreadcount",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor",
+          "unreadCount"
+        ],
+        "title": "NotificationPage",
+        "type": "object"
+      },
+      "NotificationTarget": {
+        "description": "``{available: false}`` says nothing about what the target was (NOTE-07).",
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "destination": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Destination"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "title": "NotificationTarget",
+        "type": "object"
+      },
+      "NotificationTrigger": {
+        "enum": [
+          "TaskAssigned",
+          "TaskChanged",
+          "TaskDueSoon",
+          "TaskOverdue",
+          "Mention",
+          "ReviewReminder",
+          "ArchivalScheduled",
+          "ArchivalCancelled",
+          "DeletionRequested",
+          "DeletionCancelled",
+          "ErasureDecision",
+          "InvitationAccepted",
+          "ConnectorProblem"
+        ],
+        "title": "NotificationTrigger",
+        "type": "string"
+      },
+      "NotificationView": {
+        "description": "Contract §5.3 ``Notification``; ``project`` is omitted unless authorized.",
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "notificationId": {
+            "title": "Notificationid",
+            "type": "string"
+          },
+          "project": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectLabel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "readAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Readat"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "trigger": {
+            "$ref": "#/components/schemas/NotificationTrigger"
+          }
+        },
+        "required": [
+          "notificationId",
+          "trigger",
+          "title",
+          "body",
+          "createdAt",
+          "readAt"
+        ],
+        "title": "NotificationView",
+        "type": "object"
+      },
+      "OperationAccepted": {
+        "properties": {
+          "operation": {
+            "$ref": "#/components/schemas/OperationRef"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "title": "OperationAccepted",
+        "type": "object"
+      },
+      "OperationRef": {
+        "properties": {
+          "operationId": {
+            "title": "Operationid",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/OperationState"
+          },
+          "statusUrl": {
+            "title": "Statusurl",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operationId",
+          "state",
+          "statusUrl"
+        ],
+        "title": "OperationRef",
+        "type": "object"
+      },
+      "OperationState": {
+        "enum": [
+          "Queued",
+          "Running",
+          "Retrying",
+          "WaitingForUser",
+          "Succeeded",
+          "Failed",
+          "Cancelled"
+        ],
+        "title": "OperationState",
+        "type": "string"
+      },
+      "OperationSummary": {
+        "properties": {
+          "badgeCount": {
+            "title": "Badgecount",
+            "type": "integer"
+          },
+          "needsAttention": {
+            "title": "Needsattention",
+            "type": "integer"
+          },
+          "running": {
+            "title": "Running",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "badgeCount",
+          "running",
+          "needsAttention"
+        ],
+        "title": "OperationSummary",
+        "type": "object"
+      },
+      "OperationType": {
+        "enum": [
+          "DocumentIngestion",
+          "HistoricalImport",
+          "VisibilityPropagation",
+          "RecommendationGeneration",
+          "PlannerCreate",
+          "PlannerSync",
+          "PlannerConversion",
+          "ProjectDeletion",
+          "ErasureExecution",
+          "IndexRebuild",
+          "ConnectorRevocation"
+        ],
+        "title": "OperationType",
+        "type": "string"
+      },
+      "OperationView": {
+        "description": "Contract §5.4 ``Operation``. ``project``, ``completedAt``, ``nextRetryAt``,\n``failure``, and ``waitingFor`` are omitted (not null) when they do not apply.",
+        "properties": {
+          "availableActions": {
+            "items": {
+              "$ref": "#/components/schemas/AvailableAction"
+            },
+            "title": "Availableactions",
+            "type": "array"
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completedat"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "destination": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Destination"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "failure": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FailureView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nextRetryAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextretryat"
+          },
+          "operationId": {
+            "title": "Operationid",
+            "type": "string"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProgressView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectLabel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/OperationState"
+          },
+          "subject": {
+            "$ref": "#/components/schemas/SubjectView"
+          },
+          "type": {
+            "$ref": "#/components/schemas/OperationType"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          },
+          "waitingFor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WaitingView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "operationId",
+          "type",
+          "subject",
+          "state",
+          "stage",
+          "progress",
+          "createdAt",
+          "updatedAt",
+          "availableActions",
+          "destination"
+        ],
+        "title": "OperationView",
+        "type": "object"
+      },
       "OperatorHealth": {
         "description": "Contract §13 ``/operator/health``. ``degraded`` is true while telemetry delivery is off.",
         "properties": {
@@ -684,6 +1105,33 @@
         "title": "OperatorUsage",
         "type": "object"
       },
+      "Page_OperationView_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OperationView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "Page[OperationView]",
+        "type": "object"
+      },
       "ProbeAccepted": {
         "properties": {
           "jobId": {
@@ -712,6 +1160,38 @@
           }
         },
         "title": "ProbeRequest",
+        "type": "object"
+      },
+      "ProgressUnit": {
+        "enum": [
+          "Pages",
+          "Records",
+          "Stores",
+          "Messages"
+        ],
+        "title": "ProgressUnit",
+        "type": "string"
+      },
+      "ProgressView": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/ProgressUnit"
+          }
+        },
+        "required": [
+          "done",
+          "total",
+          "unit"
+        ],
+        "title": "ProgressView",
         "type": "object"
       },
       "ProjectChooserLanding": {
@@ -840,6 +1320,19 @@
         "title": "QuotaChanged",
         "type": "object"
       },
+      "ReadAccepted": {
+        "description": "Marking read is undoable for eight seconds (contract §1.6).",
+        "properties": {
+          "undo": {
+            "$ref": "#/components/schemas/UndoRef"
+          }
+        },
+        "required": [
+          "undo"
+        ],
+        "title": "ReadAccepted",
+        "type": "object"
+      },
       "ReadinessChecks": {
         "properties": {
           "database": {
@@ -920,6 +1413,98 @@
           "status"
         ],
         "title": "ServiceHealth",
+        "type": "object"
+      },
+      "SubjectView": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "recordId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recordid"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "title": "SubjectView",
+        "type": "object"
+      },
+      "UndoRef": {
+        "properties": {
+          "expiresAt": {
+            "format": "date-time",
+            "title": "Expiresat",
+            "type": "string"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "expiresAt"
+        ],
+        "title": "UndoRef",
+        "type": "object"
+      },
+      "UndoRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "token": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "UndoRequest",
+        "type": "object"
+      },
+      "UndoResult": {
+        "properties": {
+          "result": {
+            "additionalProperties": true,
+            "description": "The current resource, of the same type the undone command returned.",
+            "title": "Result",
+            "type": "object"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "UndoResult",
+        "type": "object"
+      },
+      "WaitingView": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "label"
+        ],
+        "title": "WaitingView",
         "type": "object"
       },
       "ZeroStateLanding": {
@@ -1062,6 +1647,567 @@
         "summary": "Get Me",
         "tags": [
           "me"
+        ]
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "operationId": "listNotifications",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "unreadOnly",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Unreadonly",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Notifications",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/read-all": {
+      "post": {
+        "operationId": "markAllNotificationsRead",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mark All Read",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/{notification_id}/read": {
+      "post": {
+        "operationId": "markNotificationRead",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "notification_id",
+            "required": true,
+            "schema": {
+              "title": "Notification Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mark Read",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/{notification_id}/target": {
+      "get": {
+        "operationId": "getNotificationTarget",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "notification_id",
+            "required": true,
+            "schema": {
+              "title": "Notification Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationTarget"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Notification Target",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/v1/operations": {
+      "get": {
+        "operationId": "listOperations",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "group",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityGroup"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_OperationView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Operations",
+        "tags": [
+          "activity"
+        ]
+      }
+    },
+    "/api/v1/operations/summary": {
+      "get": {
+        "operationId": "getOperationSummary",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Operation Summary",
+        "tags": [
+          "activity"
+        ]
+      }
+    },
+    "/api/v1/operations/{operation_id}": {
+      "get": {
+        "operationId": "getOperation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "operation_id",
+            "required": true,
+            "schema": {
+              "title": "Operation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Operation",
+        "tags": [
+          "activity"
+        ]
+      }
+    },
+    "/api/v1/operations/{operation_id}/dismiss": {
+      "post": {
+        "operationId": "dismissOperation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "operation_id",
+            "required": true,
+            "schema": {
+              "title": "Operation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Dismiss Operation",
+        "tags": [
+          "activity"
+        ]
+      }
+    },
+    "/api/v1/operations/{operation_id}/retry": {
+      "post": {
+        "description": "**[idem]** Only when ``availableActions`` contains ``Retry``.",
+        "operationId": "retryOperation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "operation_id",
+            "required": true,
+            "schema": {
+              "title": "Operation Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "UUID v4, generated once per user intent and reused on retry.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "UUID v4, generated once per user intent and reused on retry.",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Retry Operation",
+        "tags": [
+          "activity"
         ]
       }
     },
@@ -1491,6 +2637,63 @@
         "summary": "Get Operator Usage",
         "tags": [
           "operator"
+        ]
+      }
+    },
+    "/api/v1/undo": {
+      "post": {
+        "description": "Idempotent; ``409 UNDO_EXPIRED`` with ``current`` once the window has closed.",
+        "operationId": "undo",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UndoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UndoResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Undo",
+        "tags": [
+          "activity"
         ]
       }
     },

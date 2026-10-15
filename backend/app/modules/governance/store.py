@@ -14,6 +14,7 @@ from sqlalchemy import ColumnElement, and_, exists, false, func, or_, select, te
 from sqlalchemy.orm import aliased
 
 from app.modules.governance.domain import TERMINAL_STATES, Destination, JobState
+from app.modules.governance.operations import JobEvent, project_job_event
 from app.modules.governance.registry import JobRegistry
 from app.modules.governance.tables import jobs
 from app.platform.clock import Clock
@@ -38,7 +39,9 @@ class ClaimedJob:
 
 
 class JobStore:
-    def __init__(self, *, uow: UnitOfWork, clock: Clock, registry: JobRegistry, firm_id: str) -> None:
+    def __init__(
+        self, *, uow: UnitOfWork, clock: Clock, registry: JobRegistry, firm_id: str
+    ) -> None:
         self._uow = uow
         self._clock = clock
         self._registry = registry
@@ -59,9 +62,7 @@ class JobStore:
                 other.c.kind.in_(deps),
                 other.c.state.not_in(_TERMINAL),
             )
-            clauses.append(
-                and_(jobs.c.kind == kind, or_(jobs.c.operation_id.is_(None), ~blocking))
-            )
+            clauses.append(and_(jobs.c.kind == kind, or_(jobs.c.operation_id.is_(None), ~blocking)))
         return or_(*clauses) if clauses else false()
 
     async def claim_one(self, owner: str, kinds: list[str] | None = None) -> ClaimedJob | None:
@@ -93,7 +94,9 @@ class JobStore:
                             jobs.c.run_at <= now,
                             self._claimable(free),
                         )
-                        .order_by(jobs.c.priority.desc(), jobs.c.run_at, jobs.c.created_at, jobs.c.id)
+                        .order_by(
+                            jobs.c.priority.desc(), jobs.c.run_at, jobs.c.created_at, jobs.c.id
+                        )
                         .limit(1)
                         .with_for_update(skip_locked=True)
                     )
@@ -114,6 +117,8 @@ class JobStore:
                     updated_at=now,
                 )
             )
+            if row["operation_id"] is not None:
+                await project_job_event(tx, row["operation_id"], "claimed", now=now)
         return ClaimedJob(
             id=row["id"],
             kind=row["kind"],
@@ -126,33 +131,52 @@ class JobStore:
 
     # ------------------------------------------------------------------ owned transitions
 
-    async def _owned_update(self, job_id: str, owner: str, **values: Any) -> bool:
+    async def _owned_update(
+        self, job_id: str, owner: str, event: JobEvent, projection: dict[str, Any], **values: Any
+    ) -> bool:
+        """Apply ``values`` while this worker still owns the job, and fold ``event`` into the
+        job's operation (if any) in the same transaction."""
         now = self._clock.now()
         async with self._uow() as tx:
-            result = await tx.session.execute(
-                update(jobs)
-                .where(
-                    jobs.c.id == job_id,
-                    jobs.c.lease_owner == owner,
-                    jobs.c.state == JobState.RUNNING.value,
+            row = (
+                await tx.session.execute(
+                    update(jobs)
+                    .where(
+                        jobs.c.id == job_id,
+                        jobs.c.lease_owner == owner,
+                        jobs.c.state == JobState.RUNNING.value,
+                    )
+                    .values(updated_at=now, **values)
+                    .returning(jobs.c.id, jobs.c.operation_id)
                 )
-                .values(updated_at=now, **values)
-                .returning(jobs.c.id)
-            )
-            return result.scalar_one_or_none() is not None
+            ).one_or_none()
+            if row is None:
+                return False
+            if row.operation_id is not None:
+                await project_job_event(tx, row.operation_id, event, now=now, **projection)
+            return True
 
     async def succeed(self, job_id: str, owner: str) -> bool:
         return await self._owned_update(
-            job_id, owner,
+            job_id, owner, "succeeded", {},
             state=JobState.SUCCEEDED.value, completed_at=self._clock.now(),
             lease_owner=None, lease_expires_at=None, last_error_code=None,
         )  # fmt: skip
 
-    async def fail(self, job_id: str, owner: str, code: str, *, count_attempt: bool = True) -> bool:
+    async def fail(
+        self,
+        job_id: str,
+        owner: str,
+        code: str,
+        *,
+        count_attempt: bool = True,
+        retryable: bool = False,
+    ) -> bool:
         """Fail the job. ``count_attempt=False`` for a refusal before the handler ran
-        (quota pre-check, invalid payload): nothing was attempted, so nothing is counted."""
+        (quota pre-check, invalid payload): nothing was attempted, so nothing is counted.
+        ``retryable`` marks the operation's failure as one a user may retry."""
         return await self._owned_update(
-            job_id, owner,
+            job_id, owner, "failed", {"error_code": code, "retryable": retryable},
             state=JobState.FAILED.value, completed_at=self._clock.now(),
             attempts=jobs.c.attempts + (1 if count_attempt else 0), last_error_code=code,
             lease_owner=None, lease_expires_at=None,
@@ -160,7 +184,7 @@ class JobStore:
 
     async def retry(self, job_id: str, owner: str, code: str, run_at: datetime) -> bool:
         return await self._owned_update(
-            job_id, owner,
+            job_id, owner, "retry", {"run_at": run_at},
             state=JobState.RETRYING.value, run_at=run_at,
             attempts=jobs.c.attempts + 1, last_error_code=code,
             lease_owner=None, lease_expires_at=None,
@@ -169,24 +193,33 @@ class JobStore:
     async def release(self, job_id: str, owner: str) -> bool:
         """Give the job back without counting an attempt (graceful shutdown)."""
         return await self._owned_update(
-            job_id, owner,
+            job_id, owner, "requeued", {},
             state=JobState.QUEUED.value, run_at=self._clock.now(),
             lease_owner=None, lease_expires_at=None,
         )  # fmt: skip
 
     async def report(
-        self, job_id: str, owner: str, stage: str, done: int | None, total: int | None, unit: str | None
+        self,
+        job_id: str,
+        owner: str,
+        stage: str,
+        done: int | None,
+        total: int | None,
+        unit: str | None,
     ) -> bool:
         return await self._owned_update(
-            job_id, owner,
+            job_id, owner, "report", {"stage": stage, "done": done, "total": total, "unit": unit},
             progress_stage=stage, progress_done=done, progress_total=total, progress_unit=unit,
         )  # fmt: skip
 
-    async def set_waiting(self, job_id: str, owner: str, action: str, destination: Destination) -> bool:
+    async def set_waiting(
+        self, job_id: str, owner: str, action: str, destination: Destination
+    ) -> bool:
+        stored = destination.model_dump(mode="json")
         return await self._owned_update(
-            job_id, owner,
+            job_id, owner, "waiting", {"waiting_action": action, "destination": stored},
             state=JobState.WAITING_FOR_USER.value,
-            waiting_action=action, waiting_destination=destination.model_dump(mode="json"),
+            waiting_action=action, waiting_destination=stored,
             lease_owner=None, lease_expires_at=None,
         )  # fmt: skip
 
@@ -218,6 +251,10 @@ class JobStore:
                     lease_expires_at=None,
                     updated_at=now,
                 )
-                .returning(jobs.c.id)
+                .returning(jobs.c.id, jobs.c.operation_id)
             )
-            return len(result.all())
+            reaped = result.all()
+            for row in reaped:
+                if row.operation_id is not None:
+                    await project_job_event(tx, row.operation_id, "retry", now=now, run_at=now)
+            return len(reaped)

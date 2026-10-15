@@ -59,6 +59,16 @@ _FAILURE_ERRORS = {
 
 
 @dataclass(frozen=True, slots=True)
+class AccountContact:
+    """Delivery details for notifications. ``email`` is personal data: never log it."""
+
+    user_id: str
+    email: str
+    person_category: PersonCategory
+    active: bool
+
+
+@dataclass(frozen=True, slots=True)
 class ApprovedDomain:
     domain: str
     created_at: datetime
@@ -287,6 +297,19 @@ class OrganizationAccess:
                 facts=SafeFacts(userId=user_id),
             )
         return assignment_id
+
+    async def account_contact(self, user_id: str) -> AccountContact | None:
+        async with self._uow() as tx:
+            row = await repo.account_by_id(tx, self._firm_id, user_id)
+        if row is None:
+            return None
+        return AccountContact(
+            user_id=row["id"],
+            email=str(row["email"]),
+            person_category=PersonCategory(row["person_category"]),
+            active=row["activation_state"] == Activation.ACTIVE.value
+            and row["disabled_at"] is None,
+        )
 
     async def user_id_for_email(self, email: str) -> str:
         """For ``relaxai-admin firm-manager appoint-first --email``."""

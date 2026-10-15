@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, NoReturn, TypeVar, cast
 
 from pydantic import BaseModel
 
@@ -47,6 +47,29 @@ class WaitingForUserSignal(BaseException):  # control flow, not an error
     """Raised by ``JobContext.wait_for_user`` to end the attempt; handlers must not catch it."""
 
 
+S = TypeVar("S")
+
+
+class ServiceDirectory:
+    """Module services a handler may use, looked up by type: ``ctx.service(Notifications)``.
+
+    The composition root registers them, so a module's ``jobs.py`` reaches its own service
+    without importing the container (which modules may not depend on).
+    """
+
+    def __init__(self) -> None:
+        self._services: dict[type, object] = {}
+
+    def register(self, service: object, *, as_type: type | None = None) -> None:
+        self._services[as_type or type(service)] = service
+
+    def get(self, kind: type[S]) -> S:
+        try:
+            return cast(S, self._services[kind])
+        except KeyError:
+            raise LookupError(f"no service registered for {kind.__name__}") from None
+
+
 @dataclass(slots=True)
 class JobContext:
     job_id: str
@@ -59,9 +82,19 @@ class JobContext:
     _store: JobStore
     _queue: JobQueue
     _owner: str
+    _services: ServiceDirectory = field(default_factory=ServiceDirectory)
+
+    def service(self, kind: type[S]) -> S:
+        """A module service registered by the composition root."""
+        return self._services.get(kind)
 
     async def report(
-        self, stage: str, done: int | None = None, total: int | None = None, *, unit: str | None = None
+        self,
+        stage: str,
+        done: int | None = None,
+        total: int | None = None,
+        *,
+        unit: str | None = None,
     ) -> None:
         """Record progress in its own short transaction, so readers see it immediately.
 
