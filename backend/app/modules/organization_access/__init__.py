@@ -15,6 +15,7 @@ from app.modules.organization_access.domain import (
 )
 from app.modules.organization_access.service import (
     AccountContact,
+    AccountProfile,
     ApprovedDomain,
     AuditRateLimiter,
     OrganizationAccess,
@@ -22,6 +23,7 @@ from app.modules.organization_access.service import (
 
 __all__ = [
     "AccountContact",
+    "AccountProfile",
     "Activation",
     "Actor",
     "ApprovedDomain",

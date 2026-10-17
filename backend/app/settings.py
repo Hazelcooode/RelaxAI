@@ -110,6 +110,18 @@ class LimitsSettings(BaseModel):
     page_max_limit: int = Field(default=100, ge=1)
 
 
+class WebSettings(BaseModel):
+    """The SPA's public origin; invitation links point at ``{base_url}/invite#c=…``."""
+
+    base_url: str = "http://localhost:5173"
+
+
+class ProjectsSettings(BaseModel):
+    """Archival candidacy counts calendar months on the firm's local calendar (PRJ-06)."""
+
+    firm_timezone: str = "UTC"
+
+
 class WorkerSettings(BaseModel):
     concurrency: int = Field(default=4, ge=1, description="Jobs one worker process runs at once")
     poll_interval_seconds: float = Field(default=1.0, gt=0)
@@ -171,6 +183,8 @@ class Settings(BaseSettings):
     telemetry: TelemetrySettings = TelemetrySettings()
     limits: LimitsSettings = LimitsSettings()
     worker: WorkerSettings = WorkerSettings()
+    web: WebSettings = WebSettings()
+    projects: ProjectsSettings = ProjectsSettings()
     usage: UsageSettings = UsageSettings()
 
     @model_validator(mode="after")

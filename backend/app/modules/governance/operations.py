@@ -535,6 +535,25 @@ class Operations:
             .values(values)
         )
 
+    async def refs(self, tx: Tx, operation_ids: Sequence[str]) -> dict[str, OperationRef]:
+        """Current ``OperationRef`` per id, in the caller's transaction, for owning modules
+        that embed the operation in their own response (``Project.deletion.operation``).
+        No audience check: the caller has already authorized the record that links it."""
+        if not operation_ids:
+            return {}
+        o = operations.c
+        rows = await tx.session.execute(
+            select(o.id, o.state).where(o.firm_id == self._firm_id, o.id.in_(list(operation_ids)))
+        )
+        return {
+            row.id: OperationRef(
+                operation_id=row.id,
+                state=OperationState(row.state),
+                status_url=status_url(row.id),
+            )
+            for row in rows
+        }
+
     # ------------------------------------------------------------------ readers
 
     async def get_for(self, actor: OperationActor, operation_id: str) -> OperationView:

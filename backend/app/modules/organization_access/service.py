@@ -69,6 +69,18 @@ class AccountContact:
 
 
 @dataclass(frozen=True, slots=True)
+class AccountProfile:
+    """Directory facts other modules may show to authorized viewers (member lists, people
+    pickers). ``email`` and ``display_name`` are personal data: never log or audit them."""
+
+    user_id: str
+    display_name: str
+    email: str
+    person_category: PersonCategory
+    active: bool
+
+
+@dataclass(frozen=True, slots=True)
 class ApprovedDomain:
     domain: str
     created_at: datetime
@@ -311,6 +323,26 @@ class OrganizationAccess:
             and row["disabled_at"] is None,
         )
 
+    async def profiles(self, user_ids: Iterable[str]) -> dict[str, AccountProfile]:
+        """Profiles by id; unknown ids are simply absent."""
+        async with self._uow() as tx:
+            rows = await repo.accounts_by_ids(tx, self._firm_id, sorted(set(user_ids)))
+        return {str(r["id"]): _profile(r) for r in rows}
+
+    async def profile_for_email(self, email: str) -> AccountProfile | None:
+        async with self._uow() as tx:
+            row = await repo.account_by_email(tx, self._firm_id, email.strip().lower())
+        return _profile(row) if row is not None else None
+
+    async def is_approved_domain(self, domain: str) -> bool:
+        """Whether ``domain`` may hold Team Member accounts (IAM-01)."""
+        try:
+            normalized = normalize_domain(domain)
+        except ValueError:
+            return False
+        async with self._uow() as tx:
+            return normalized in await repo.approved_domain_names(tx, self._firm_id)
+
     async def user_id_for_email(self, email: str) -> str:
         """For ``relaxai-admin firm-manager appoint-first --email``."""
         async with self._uow() as tx:
@@ -403,6 +435,16 @@ class OrganizationAccess:
             outcome=Outcome.SUCCEEDED,
             facts=SafeFacts(domain=domain),
         )
+
+
+def _profile(row: RowMapping) -> AccountProfile:
+    return AccountProfile(
+        user_id=str(row["id"]),
+        display_name=str(row["display_name"]),
+        email=str(row["email"]),
+        person_category=PersonCategory(row["person_category"]),
+        active=row["activation_state"] == Activation.ACTIVE.value and row["disabled_at"] is None,
+    )
 
 
 def _domain_or_422(domain: str) -> str:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api.v1 import activity, me, notifications, operator
+from app.api.v1 import activity, me, memberships, notifications, operator, projects
 from app.platform.http.errors import ErrorEnvelope
 
 ERROR_RESPONSES: dict[int | str, dict[str, object]] = {
@@ -18,5 +18,7 @@ router.include_router(me.router)
 router.include_router(activity.router)
 router.include_router(notifications.router)
 router.include_router(operator.router)
+router.include_router(projects.router)
+router.include_router(memberships.router)
 
 # Later tasks include their routers here, e.g. router.include_router(me.router).

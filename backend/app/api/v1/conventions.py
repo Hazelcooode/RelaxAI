@@ -26,7 +26,7 @@ from fastapi import Depends, Header, Request
 from pydantic import BaseModel
 from starlette.responses import JSONResponse, Response
 
-from app.api.v1.deps import ActiveActor, AppContainer
+from app.api.v1.deps import ActiveActor, AppContainer, CurrentActor
 from app.container import Container
 from app.platform.correlation import route_template
 from app.platform.errors import FieldIssue, ValidationFailed
@@ -90,18 +90,7 @@ def _response(status: int, body: Any, *, replayed: bool) -> Response:
     return JSONResponse(content=body, status_code=status, headers=headers)
 
 
-async def idempotent_command(
-    request: Request,
-    container: AppContainer,
-    actor: ActiveActor,
-    idempotency_key: Annotated[
-        str | None,
-        Header(
-            alias=IDEMPOTENCY_HEADER,
-            description="UUID v4, generated once per user intent and reused on retry.",
-        ),
-    ] = None,
-) -> IdempotentCommand:
+def _validated_key(idempotency_key: str | None) -> str:
     if idempotency_key is None or not idempotency_key.strip():
         raise ValidationFailed(
             [
@@ -113,20 +102,57 @@ async def idempotent_command(
             ]
         )
     try:
-        key = str(uuid.UUID(idempotency_key.strip()))
+        return str(uuid.UUID(idempotency_key.strip()))
     except ValueError:
         raise ValidationFailed(
             [FieldIssue(field=IDEMPOTENCY_HEADER, code="uuid", message="Expected a UUID.")]
         ) from None
-    assert actor.user_id is not None  # noqa: S101 - ActiveActor guarantees it
+
+
+async def _command(
+    request: Request, container: Container, actor_id: str, idempotency_key: str | None
+) -> IdempotentCommand:
+    key = _validated_key(idempotency_key)
     route = route_template(request.scope)
     return IdempotentCommand(
         container=container,
-        actor_id=actor.user_id,
+        actor_id=actor_id,
         route=route,
         key=key,
         request_hash=request_hash(request.method, route, request.path_params, await request.body()),
     )
 
 
+def _key_header() -> Any:
+    return Header(
+        alias=IDEMPOTENCY_HEADER,
+        description="UUID v4, generated once per user intent and reused on retry.",
+    )
+
+
+async def idempotent_command(
+    request: Request,
+    container: AppContainer,
+    actor: ActiveActor,
+    idempotency_key: Annotated[str | None, _key_header()] = None,
+) -> IdempotentCommand:
+    assert actor.user_id is not None  # noqa: S101 - ActiveActor guarantees it
+    return await _command(request, container, actor.user_id, idempotency_key)
+
+
+async def idempotent_command_any_actor(
+    request: Request,
+    container: AppContainer,
+    actor: CurrentActor,
+    idempotency_key: Annotated[str | None, _key_header()] = None,
+) -> IdempotentCommand:
+    """For the few **[idem]** routes open to not-yet-activated actors (invitation
+    acceptance): keys are scoped to the account, or to a hash of the token subject."""
+    actor_id = actor.user_id or (
+        "sub_" + hashlib.sha256(f"subject:{actor.subject}".encode()).hexdigest()[:32]
+    )
+    return await _command(request, container, actor_id, idempotency_key)
+
+
 Idempotent = Annotated[IdempotentCommand, Depends(idempotent_command)]
+IdempotentAnyActor = Annotated[IdempotentCommand, Depends(idempotent_command_any_actor)]

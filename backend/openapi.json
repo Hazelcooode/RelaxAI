@@ -1,6 +1,27 @@
 {
   "components": {
     "schemas": {
+      "AcceptanceView": {
+        "properties": {
+          "me": {
+            "$ref": "#/components/schemas/Me"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ProjectRole"
+          }
+        },
+        "required": [
+          "projectId",
+          "role",
+          "me"
+        ],
+        "title": "AcceptanceView",
+        "type": "object"
+      },
       "ActivationLanding": {
         "properties": {
           "kind": {
@@ -57,6 +78,32 @@
         "title": "ApprovedDomainView",
         "type": "object"
       },
+      "ArchivalScheduleView": {
+        "properties": {
+          "executesAt": {
+            "format": "date-time",
+            "title": "Executesat",
+            "type": "string"
+          },
+          "scheduledAt": {
+            "format": "date-time",
+            "title": "Scheduledat",
+            "type": "string"
+          },
+          "scheduledBy": {
+            "const": "FirmManager",
+            "default": "FirmManager",
+            "title": "Scheduledby",
+            "type": "string"
+          }
+        },
+        "required": [
+          "executesAt",
+          "scheduledAt"
+        ],
+        "title": "ArchivalScheduleView",
+        "type": "object"
+      },
       "AvailableAction": {
         "enum": [
           "Retry",
@@ -66,6 +113,39 @@
           "Dismiss"
         ],
         "title": "AvailableAction",
+        "type": "string"
+      },
+      "Capability": {
+        "description": "Exactly the list in contract §3.",
+        "enum": [
+          "project.read",
+          "project.update",
+          "membership.manage",
+          "lifecycle.manage",
+          "document.upload",
+          "source.connect",
+          "source.disable",
+          "ingestion.view",
+          "review.pseudonymization",
+          "knowledge.read",
+          "knowledge.review",
+          "visibility.change",
+          "search",
+          "chat",
+          "timeline.read",
+          "network.read",
+          "workload.read",
+          "recommendation.read",
+          "recommendation.review",
+          "task.board.read",
+          "task.administer",
+          "task.reopen",
+          "task.own.update",
+          "planner.connect",
+          "planner.draft",
+          "audit.project.read"
+        ],
+        "title": "Capability",
         "type": "string"
       },
       "ConnectorSummary": {
@@ -85,6 +165,136 @@
           "state"
         ],
         "title": "ConnectorSummary",
+        "type": "object"
+      },
+      "CreateProjectRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CreateProjectRequest",
+        "type": "object"
+      },
+      "CredentialRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "credential": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Credential",
+            "type": "string"
+          }
+        },
+        "required": [
+          "credential"
+        ],
+        "title": "CredentialRequest",
+        "type": "object"
+      },
+      "DeletionReportView": {
+        "description": "Store name, state, and completion time only — never counts or identifiers of\ncontent.",
+        "properties": {
+          "completedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completedat"
+          },
+          "stores": {
+            "items": {
+              "$ref": "#/components/schemas/StoreReportView"
+            },
+            "title": "Stores",
+            "type": "array"
+          }
+        },
+        "required": [
+          "stores"
+        ],
+        "title": "DeletionReportView",
+        "type": "object"
+      },
+      "DeletionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "confirmationName": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Confirmationname",
+            "type": "string"
+          }
+        },
+        "required": [
+          "confirmationName"
+        ],
+        "title": "DeletionRequest",
+        "type": "object"
+      },
+      "DeletionRequestResult": {
+        "description": "``202`` body of ``POST /projects/{id}/deletion``.",
+        "properties": {
+          "operation": {
+            "$ref": "#/components/schemas/OperationRef"
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectView"
+          }
+        },
+        "required": [
+          "project",
+          "operation"
+        ],
+        "title": "DeletionRequestResult",
+        "type": "object"
+      },
+      "DeletionView": {
+        "properties": {
+          "executesAt": {
+            "format": "date-time",
+            "title": "Executesat",
+            "type": "string"
+          },
+          "operation": {
+            "$ref": "#/components/schemas/OperationRef"
+          },
+          "requestedAt": {
+            "format": "date-time",
+            "title": "Requestedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requestedAt",
+          "executesAt",
+          "operation"
+        ],
+        "title": "DeletionView",
         "type": "object"
       },
       "Destination": {
@@ -138,6 +348,13 @@
         "description": "Empty: the identity comes from the verified token.",
         "properties": {},
         "title": "EmployeeActivationRequest",
+        "type": "object"
+      },
+      "EmptyRequest": {
+        "additionalProperties": false,
+        "description": "``{}``.",
+        "properties": {},
+        "title": "EmptyRequest",
         "type": "object"
       },
       "ErrorBody": {
@@ -427,6 +644,151 @@
         "title": "HomeLanding",
         "type": "object"
       },
+      "InvitationContext": {
+        "description": "Contract §4.3: what the credential holder may see before accepting.",
+        "properties": {
+          "expiresAt": {
+            "format": "date-time",
+            "title": "Expiresat",
+            "type": "string"
+          },
+          "intendedRole": {
+            "$ref": "#/components/schemas/ProjectRole"
+          },
+          "inviteeEmailMasked": {
+            "title": "Inviteeemailmasked",
+            "type": "string"
+          },
+          "inviterDisplayName": {
+            "title": "Inviterdisplayname",
+            "type": "string"
+          },
+          "issuedAt": {
+            "format": "date-time",
+            "title": "Issuedat",
+            "type": "string"
+          },
+          "projectName": {
+            "title": "Projectname",
+            "type": "string"
+          },
+          "signedInEmailMatches": {
+            "title": "Signedinemailmatches",
+            "type": "boolean"
+          },
+          "state": {
+            "$ref": "#/components/schemas/InvitationState"
+          }
+        },
+        "required": [
+          "projectName",
+          "intendedRole",
+          "inviterDisplayName",
+          "inviteeEmailMasked",
+          "issuedAt",
+          "expiresAt",
+          "state",
+          "signedInEmailMatches"
+        ],
+        "title": "InvitationContext",
+        "type": "object"
+      },
+      "InvitationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ProjectRole"
+          }
+        },
+        "required": [
+          "email",
+          "role"
+        ],
+        "title": "InvitationRequest",
+        "type": "object"
+      },
+      "InvitationState": {
+        "enum": [
+          "Pending",
+          "Accepted",
+          "Expired",
+          "Revoked"
+        ],
+        "title": "InvitationState",
+        "type": "string"
+      },
+      "InvitationView": {
+        "description": "Contract §6.4: invitee, role, inviter, issue time, expiry, state — nothing else.",
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "title": "Expiresat",
+            "type": "string"
+          },
+          "invitationId": {
+            "title": "Invitationid",
+            "type": "string"
+          },
+          "inviter": {
+            "$ref": "#/components/schemas/InviterView"
+          },
+          "issuedAt": {
+            "format": "date-time",
+            "title": "Issuedat",
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ProjectRole"
+          },
+          "state": {
+            "$ref": "#/components/schemas/InvitationState"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "invitationId",
+          "email",
+          "role",
+          "inviter",
+          "issuedAt",
+          "expiresAt",
+          "state",
+          "version"
+        ],
+        "title": "InvitationView",
+        "type": "object"
+      },
+      "InviterView": {
+        "properties": {
+          "displayName": {
+            "title": "Displayname",
+            "type": "string"
+          },
+          "userId": {
+            "title": "Userid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "displayName"
+        ],
+        "title": "InviterView",
+        "type": "object"
+      },
       "LastBackup": {
         "properties": {
           "at": {
@@ -452,6 +814,16 @@
         ],
         "title": "LastBackup",
         "type": "object"
+      },
+      "Lifecycle": {
+        "enum": [
+          "Active",
+          "Archived",
+          "PendingDeletion",
+          "Deleted"
+        ],
+        "title": "Lifecycle",
+        "type": "string"
       },
       "Me": {
         "description": "Contract §4.1. T05 completes ``projects`` and ``landing``; T20 ``connector``.",
@@ -584,7 +956,7 @@
         "properties": {
           "capabilities": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/Capability"
             },
             "title": "Capabilities",
             "type": "array"
@@ -613,14 +985,7 @@
             "$ref": "#/components/schemas/ProjectLabel"
           },
           "role": {
-            "enum": [
-              "Administrator",
-              "Contributor",
-              "Viewer",
-              "ClientCollaborator"
-            ],
-            "title": "Role",
-            "type": "string"
+            "$ref": "#/components/schemas/ProjectRole"
           }
         },
         "required": [
@@ -631,6 +996,54 @@
           "latestActivityAt"
         ],
         "title": "MeProject",
+        "type": "object"
+      },
+      "MembershipView": {
+        "description": "Contract §6.3. Never a pseudonym or Client Identity Mapping value (PRV-11).",
+        "properties": {
+          "displayName": {
+            "title": "Displayname",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "joinedAt": {
+            "format": "date-time",
+            "title": "Joinedat",
+            "type": "string"
+          },
+          "membershipId": {
+            "title": "Membershipid",
+            "type": "string"
+          },
+          "personCategory": {
+            "$ref": "#/components/schemas/PersonCategory"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ProjectRole"
+          },
+          "userId": {
+            "title": "Userid",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "membershipId",
+          "userId",
+          "displayName",
+          "email",
+          "personCategory",
+          "role",
+          "joinedAt",
+          "version"
+        ],
+        "title": "MembershipView",
         "type": "object"
       },
       "Meter": {
@@ -1105,6 +1518,60 @@
         "title": "OperatorUsage",
         "type": "object"
       },
+      "Page_InvitationView_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InvitationView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "Page[InvitationView]",
+        "type": "object"
+      },
+      "Page_MembershipView_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MembershipView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "Page[MembershipView]",
+        "type": "object"
+      },
       "Page_OperationView_": {
         "properties": {
           "items": {
@@ -1130,6 +1597,112 @@
           "items"
         ],
         "title": "Page[OperationView]",
+        "type": "object"
+      },
+      "Page_ProjectView_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "Page[ProjectView]",
+        "type": "object"
+      },
+      "PeoplePurpose": {
+        "enum": [
+          "TaskAssignee",
+          "TaskWatcher",
+          "ActionItemResponsible",
+          "ParticipantFilter"
+        ],
+        "title": "PeoplePurpose",
+        "type": "string"
+      },
+      "PersonCategory": {
+        "enum": [
+          "TeamMember",
+          "ClientCollaborator"
+        ],
+        "title": "PersonCategory",
+        "type": "string"
+      },
+      "PersonRef": {
+        "description": "Contract §3 ``PersonRef`` plus the picker's ``eligibleForInternal`` (§6.5).\n\nAccount-space and Evidence-space ids are derived under different keys, so the two\nspaces are disjoint and a ref in one never joins to the other.",
+        "properties": {
+          "displayLabel": {
+            "title": "Displaylabel",
+            "type": "string"
+          },
+          "eligibleForInternal": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eligibleforinternal"
+          },
+          "kind": {
+            "enum": [
+              "TeamMember",
+              "ClientCollaborator",
+              "UnknownPerson",
+              "DeletedUser"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "personRefId": {
+            "title": "Personrefid",
+            "type": "string"
+          },
+          "space": {
+            "enum": [
+              "Account",
+              "Evidence"
+            ],
+            "title": "Space",
+            "type": "string"
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Userid"
+          }
+        },
+        "required": [
+          "personRefId",
+          "space",
+          "kind",
+          "displayLabel"
+        ],
+        "title": "PersonRef",
         "type": "object"
       },
       "ProbeAccepted": {
@@ -1241,6 +1814,114 @@
           "projectId"
         ],
         "title": "ProjectLanding",
+        "type": "object"
+      },
+      "ProjectRole": {
+        "enum": [
+          "Administrator",
+          "Contributor",
+          "Viewer",
+          "ClientCollaborator"
+        ],
+        "title": "ProjectRole",
+        "type": "string"
+      },
+      "ProjectView": {
+        "description": "Contract §6.1 ``Project`` as seen by one member.",
+        "properties": {
+          "archivalSchedule": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ArchivalScheduleView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/Capability"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "deletion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeletionView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "latestActivityAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latestactivityat"
+          },
+          "lifecycle": {
+            "$ref": "#/components/schemas/Lifecycle"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ProjectRole"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "projectId",
+          "name",
+          "description",
+          "code",
+          "lifecycle",
+          "role",
+          "capabilities",
+          "latestActivityAt",
+          "createdAt",
+          "archivalSchedule",
+          "deletion",
+          "version"
+        ],
+        "title": "ProjectView",
         "type": "object"
       },
       "ProjectionLag": {
@@ -1381,6 +2062,62 @@
         "title": "ReadinessStatus",
         "type": "object"
       },
+      "RoleChangePreview": {
+        "properties": {
+          "blocked": {
+            "anyOf": [
+              {
+                "const": "FINAL_ADMINISTRATOR",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked"
+          },
+          "gained": {
+            "items": {
+              "$ref": "#/components/schemas/Capability"
+            },
+            "title": "Gained",
+            "type": "array"
+          },
+          "lost": {
+            "items": {
+              "$ref": "#/components/schemas/Capability"
+            },
+            "title": "Lost",
+            "type": "array"
+          }
+        },
+        "required": [
+          "gained",
+          "lost"
+        ],
+        "title": "RoleChangePreview",
+        "type": "object"
+      },
+      "RoleChangeRequest": {
+        "additionalProperties": false,
+        "description": "Team Member roles only: a Client Collaborator's role never changes.",
+        "properties": {
+          "role": {
+            "enum": [
+              "Administrator",
+              "Contributor",
+              "Viewer"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "title": "RoleChangeRequest",
+        "type": "object"
+      },
       "ServiceHealth": {
         "properties": {
           "detail": {
@@ -1413,6 +2150,35 @@
           "status"
         ],
         "title": "ServiceHealth",
+        "type": "object"
+      },
+      "StoreReportView": {
+        "properties": {
+          "completedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completedat"
+          },
+          "state": {
+            "$ref": "#/components/schemas/WorkItemState"
+          },
+          "store": {
+            "title": "Store",
+            "type": "string"
+          }
+        },
+        "required": [
+          "store",
+          "state"
+        ],
+        "title": "StoreReportView",
         "type": "object"
       },
       "SubjectView": {
@@ -1489,6 +2255,38 @@
         "title": "UndoResult",
         "type": "object"
       },
+      "UpdateProjectRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "UpdateProjectRequest",
+        "type": "object"
+      },
       "WaitingView": {
         "properties": {
           "action": {
@@ -1506,6 +2304,17 @@
         ],
         "title": "WaitingView",
         "type": "object"
+      },
+      "WorkItemState": {
+        "enum": [
+          "Pending",
+          "Running",
+          "Retrying",
+          "Failed",
+          "Completed"
+        ],
+        "title": "WorkItemState",
+        "type": "string"
       },
       "ZeroStateLanding": {
         "properties": {
@@ -1601,6 +2410,140 @@
         "summary": "Activate Employee",
         "tags": [
           "me"
+        ]
+      }
+    },
+    "/api/v1/invitations/accept": {
+      "post": {
+        "description": "**[idem]** Creates the Client Collaborator account when needed; re-accepting with the\nsame account returns the same result.",
+        "operationId": "acceptInvitation",
+        "parameters": [
+          {
+            "description": "UUID v4, generated once per user intent and reused on retry.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "UUID v4, generated once per user intent and reused on retry.",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CredentialRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Accept Invitation",
+        "tags": [
+          "memberships"
+        ]
+      }
+    },
+    "/api/v1/invitations/inspect": {
+      "post": {
+        "description": "Open to not-yet-activated actors. Rate limited per client address and per actor.",
+        "operationId": "inspectInvitation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CredentialRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationContext"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Inspect Invitation",
+        "tags": [
+          "memberships"
         ]
       }
     },
@@ -2637,6 +3580,1749 @@
         "summary": "Get Operator Usage",
         "tags": [
           "operator"
+        ]
+      }
+    },
+    "/api/v1/projects": {
+      "get": {
+        "description": "The caller's Projects. Pending Deletion Projects appear only on ``/projects/recovery``.",
+        "operationId": "listProjects",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "lifecycle",
+            "required": false,
+            "schema": {
+              "default": "Active",
+              "enum": [
+                "Active",
+                "Archived",
+                "All"
+              ],
+              "title": "Lifecycle",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ProjectView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Projects",
+        "tags": [
+          "projects"
+        ]
+      },
+      "post": {
+        "description": "**[idem]** ``project.create``: the creator becomes the Administrator.",
+        "operationId": "createProject",
+        "parameters": [
+          {
+            "description": "UUID v4, generated once per user intent and reused on retry.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "UUID v4, generated once per user intent and reused on retry.",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Project",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/recovery": {
+      "get": {
+        "description": "Pending Deletion Projects the caller administers.",
+        "operationId": "listRecoveryProjects",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectView"
+                  },
+                  "title": "Response Listrecoveryprojects",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Recovery Projects",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}": {
+      "get": {
+        "operationId": "getProject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Project",
+        "tags": [
+          "projects"
+        ]
+      },
+      "patch": {
+        "description": "**[ver]**",
+        "operationId": "updateProject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Current version, e.g. \"3\" (from the ETag).",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Current version, e.g. \"3\" (from the ETag).",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Project",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/archival-schedule": {
+      "delete": {
+        "description": "An Administrator cancels the Firm Manager's scheduled archival.",
+        "operationId": "cancelArchivalSchedule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cancel Archival Schedule",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/archive": {
+      "post": {
+        "description": "**[ver]**",
+        "operationId": "archiveProject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Current version, e.g. \"3\" (from the ETag).",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Current version, e.g. \"3\" (from the ETag).",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/EmptyRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Archive Project",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/deletion": {
+      "delete": {
+        "description": "**[ver]** Recovery before the 30-day deadline.",
+        "operationId": "cancelProjectDeletion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Current version, e.g. \"3\" (from the ETag).",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Current version, e.g. \"3\" (from the ETag).",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cancel Deletion",
+        "tags": [
+          "projects"
+        ]
+      },
+      "post": {
+        "description": "**[idem][ver]** ``confirmationName`` must equal the current name exactly.\n\nThe scope uses the recovery purpose so a retry after success (the Project is now\nPending Deletion) still reaches the stored response instead of ``NOT_AVAILABLE``.",
+        "operationId": "requestProjectDeletion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Current version, e.g. \"3\" (from the ETag).",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Current version, e.g. \"3\" (from the ETag).",
+              "title": "If-Match"
+            }
+          },
+          {
+            "description": "UUID v4, generated once per user intent and reused on retry.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "UUID v4, generated once per user intent and reused on retry.",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeletionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionRequestResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Request Deletion",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/deletion-report": {
+      "get": {
+        "description": "Administrators during recovery; a Firm Manager after completion.",
+        "operationId": "getDeletionReport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionReportView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Deletion Report",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/invitations": {
+      "get": {
+        "operationId": "listInvitations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/InvitationState"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_InvitationView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Invitations",
+        "tags": [
+          "memberships"
+        ]
+      },
+      "post": {
+        "description": "**[idem]** ``409 ALREADY_EXISTS`` for a pending invitation or an existing member.",
+        "operationId": "createInvitation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "UUID v4, generated once per user intent and reused on retry.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "UUID v4, generated once per user intent and reused on retry.",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Invitation",
+        "tags": [
+          "memberships"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/invitations/{invitation_id}": {
+      "get": {
+        "operationId": "getInvitation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invitation_id",
+            "required": true,
+            "schema": {
+              "title": "Invitation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Invitation",
+        "tags": [
+          "memberships"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/invitations/{invitation_id}/resend": {
+      "post": {
+        "description": "**[idem][ver]** A new invitation; the previous credential stops working.",
+        "operationId": "resendInvitation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invitation_id",
+            "required": true,
+            "schema": {
+              "title": "Invitation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Current version, e.g. \"3\" (from the ETag).",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Current version, e.g. \"3\" (from the ETag).",
+              "title": "If-Match"
+            }
+          },
+          {
+            "description": "UUID v4, generated once per user intent and reused on retry.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "UUID v4, generated once per user intent and reused on retry.",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Resend Invitation",
+        "tags": [
+          "memberships"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/invitations/{invitation_id}/revoke": {
+      "post": {
+        "description": "**[ver]**",
+        "operationId": "revokeInvitation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invitation_id",
+            "required": true,
+            "schema": {
+              "title": "Invitation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Current version, e.g. \"3\" (from the ETag).",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Current version, e.g. \"3\" (from the ETag).",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Revoke Invitation",
+        "tags": [
+          "memberships"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/mark-active": {
+      "post": {
+        "operationId": "markProjectActive",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mark Active",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/memberships": {
+      "get": {
+        "operationId": "listMemberships",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_MembershipView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Memberships",
+        "tags": [
+          "memberships"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/memberships/{membership_id}": {
+      "delete": {
+        "description": "**[ver]** ``409 FINAL_ADMINISTRATOR`` for the last Administrator.",
+        "operationId": "removeMembership",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "membership_id",
+            "required": true,
+            "schema": {
+              "title": "Membership Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Current version, e.g. \"3\" (from the ETag).",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Current version, e.g. \"3\" (from the ETag).",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Membership",
+        "tags": [
+          "memberships"
+        ]
+      },
+      "patch": {
+        "description": "**[ver]** ``409 FINAL_ADMINISTRATOR`` when it would leave no Administrator.",
+        "operationId": "changeMembershipRole",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "membership_id",
+            "required": true,
+            "schema": {
+              "title": "Membership Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Current version, e.g. \"3\" (from the ETag).",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Current version, e.g. \"3\" (from the ETag).",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Change Role",
+        "tags": [
+          "memberships"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/memberships/{membership_id}/role-change-preview": {
+      "get": {
+        "operationId": "previewRoleChange",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "membership_id",
+            "required": true,
+            "schema": {
+              "title": "Membership Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "role",
+            "required": true,
+            "schema": {
+              "enum": [
+                "Administrator",
+                "Contributor",
+                "Viewer"
+              ],
+              "title": "Role",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleChangePreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Role Change Preview",
+        "tags": [
+          "memberships"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/people": {
+      "get": {
+        "operationId": "listPeople",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "purpose",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PeoplePurpose"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PersonRef"
+                  },
+                  "title": "Response Listpeople",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "People",
+        "tags": [
+          "memberships"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/restore": {
+      "post": {
+        "description": "**[ver]**",
+        "operationId": "restoreProject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Current version, e.g. \"3\" (from the ETag).",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Current version, e.g. \"3\" (from the ETag).",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/EmptyRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error envelope (contract §2)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Restore Project",
+        "tags": [
+          "projects"
         ]
       }
     },

@@ -196,6 +196,10 @@ TEMPLATES: Final[Mapping[str, NotificationTemplate]] = {
             "The Project stays active.", _project_path("/settings"),
         ),
         NotificationTemplate(
+            "archival.skipped", _T.ARCHIVAL_CANCELLED, "A scheduled archival did not run",
+            "The Project had new activity, so it stays active.", _project_path("/settings"),
+        ),
+        NotificationTemplate(
             "deletion.requested", _T.DELETION_REQUESTED, "A Project is pending deletion",
             "It will be deleted on {executesOn} unless the deletion is cancelled.",
             _fixed("ProjectRecovery", "/projects/recovery"), {"executesOn": DATE},

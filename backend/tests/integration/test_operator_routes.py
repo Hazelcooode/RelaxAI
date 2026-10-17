@@ -38,7 +38,8 @@ async def test_health_reports_queue_and_usage_state(client: httpx.AsyncClient) -
     r = await client.get("/api/v1/operator/health")
     assert r.status_code == 200
     body = r.json()
-    assert body["queue"][0]["kind"] == "governance.worker_probe"
+    # Every registered kind is listed (sorted), not only the first module's.
+    assert "governance.worker_probe" in {q["kind"] for q in body["queue"]}
     assert body["projectionLag"] == []
     assert body["lastBackup"] is None
     # Azure Monitor delivery is not configured in tests, so the surface says so.

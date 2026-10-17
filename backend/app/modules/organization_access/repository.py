@@ -30,6 +30,13 @@ async def account_by_id(tx: Tx, firm_id: str, user_id: str) -> RowMapping | None
     return (await tx.session.execute(stmt)).mappings().one_or_none()
 
 
+async def accounts_by_ids(tx: Tx, firm_id: str, user_ids: list[str]) -> list[RowMapping]:
+    if not user_ids:
+        return []
+    stmt = select(user_accounts).where(a.firm_id == firm_id, a.id.in_(user_ids))
+    return list((await tx.session.execute(stmt)).mappings().all())
+
+
 async def account_by_email(tx: Tx, firm_id: str, email: str) -> RowMapping | None:
     stmt = select(user_accounts).where(a.firm_id == firm_id, a.email == email)
     return (await tx.session.execute(stmt)).mappings().one_or_none()

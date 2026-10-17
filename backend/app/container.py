@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import TypedDict, Unpack
+from zoneinfo import ZoneInfo
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -24,7 +26,6 @@ from app.modules.governance import (
     JobQueue,
     JobRegistry,
     JobStore,
-    NoProjectAccess,
     OperationAccess,
     Operations,
     RegexReasonScreen,
@@ -34,6 +35,19 @@ from app.modules.governance import (
     Worker,
 )
 from app.modules.organization_access import OrganizationAccess, PersonCategory
+from app.modules.projects import (
+    Invitations,
+    LifecycleHook,
+    Membership,
+    ProjectAccess,
+    ProjectAccessAdapter,
+    ProjectActivity,
+    ProjectLifecycle,
+    ProjectPurger,
+    Projects,
+    VerifiedNoopPurger,
+)
+from app.modules.projects.lifecycle import ProjectMetadataPurger
 from app.platform.auth import TokenVerifier, entra_token_verifier
 from app.platform.clock import Clock, SystemClock
 from app.platform.db import UnitOfWork, create_engine
@@ -66,6 +80,12 @@ class Container:
     operations: Operations
     notifications: Notifications
     email: EmailSender
+    project_access: ProjectAccess
+    projects: Projects
+    activity: ProjectActivity
+    membership: Membership
+    invitations: Invitations
+    lifecycle: ProjectLifecycle
 
     async def aclose(self) -> None:
         await self.http.aclose()
@@ -83,6 +103,8 @@ class ContainerOverrides(TypedDict, total=False):
     token_verifier: TokenVerifier
     email: EmailSender
     project_access: OperationAccess
+    purgers: Sequence[ProjectPurger]
+    lifecycle_hooks: Sequence[LifecycleHook]
 
 
 class _AccountRecipients:
@@ -101,6 +123,31 @@ class _AccountRecipients:
             client_collaborator=contact.person_category is PersonCategory.CLIENT_COLLABORATOR,
             active=contact.active,
         )
+
+
+def _derived_key(signing_key: bytes, purpose: bytes) -> bytes:
+    """Domain-separated subkey, so no two uses of the signing key share a key."""
+    return hmac.new(signing_key, purpose, hashlib.sha256).digest()
+
+
+def default_purgers(uow: UnitOfWork) -> list[ProjectPurger]:
+    """The deletion registry in purge order (docs/adr/0002-deletion-purge-order.md):
+    derived and remote stores first, authoritative PostgreSQL rows next, the Project's own
+    metadata last. Owners replace their verified no-op with a real adapter in place."""
+    return [
+        VerifiedNoopPurger("qdrant"),  # T16
+        VerifiedNoopPurger("notifications"),  # T04 store; purge lands with T29
+        # No export feature exists in the Portfolio Release, so there is nothing to purge.
+        VerifiedNoopPurger("exports"),
+        VerifiedNoopPurger("blob.retained"),  # T08
+        VerifiedNoopPurger("postgres.retrieval"),  # T18
+        VerifiedNoopPurger("postgres.intelligence"),  # T23
+        VerifiedNoopPurger("postgres.actions"),  # T25
+        VerifiedNoopPurger("postgres.knowledge"),  # T13
+        VerifiedNoopPurger("postgres.privacy"),  # T11
+        VerifiedNoopPurger("postgres.intake"),  # T09
+        ProjectMetadataPurger(uow),
+    ]
 
 
 def _email_sender(settings: EmailSettings, http: httpx.AsyncClient) -> EmailSender:
@@ -126,8 +173,6 @@ def build_container(settings: Settings, **overrides: Unpack[ContainerOverrides])
     firm_id = settings.firm_id
     http = httpx.AsyncClient(follow_redirects=False)
     services = ServiceDirectory()
-    # T05 replaces this with the ProjectAccess adapter (operations and notifications).
-    project_access = overrides.get("project_access") or NoProjectAccess()
 
     queue = JobQueue(uow=uow, clock=clock, registry=registry, firm_id=firm_id)
     store = JobStore(uow=uow, clock=clock, registry=registry, firm_id=firm_id)
@@ -158,6 +203,11 @@ def build_container(settings: Settings, **overrides: Unpack[ContainerOverrides])
         reason_screen=RegexReasonScreen(),  # T11 replaces this
     )
     signing_key = settings.crypto.cursor_signing_key.get_secret_value().encode()
+    access = ProjectAccess(uow=uow, clock=clock, firm_id=firm_id, audit=audit)
+    # Operations and notifications reauthorize every read through ProjectAccess.
+    project_access: OperationAccess = overrides.get("project_access") or ProjectAccessAdapter(
+        access
+    )
     organization = OrganizationAccess(
         uow=uow,
         clock=clock,
@@ -166,7 +216,7 @@ def build_container(settings: Settings, **overrides: Unpack[ContainerOverrides])
         audit=audit,
         operator_subjects=settings.entra.operator_subjects,
         # Domain-separated from the cursor MAC so the two uses never share a key.
-        reference_key=hmac.new(signing_key, b"relaxai/subject-reference", hashlib.sha256).digest(),
+        reference_key=_derived_key(signing_key, b"relaxai/subject-reference"),
     )
     idempotency = IdempotencyKeys(uow=uow, clock=clock)
     undo = UndoService(uow=uow, clock=clock)
@@ -191,7 +241,53 @@ def build_container(settings: Settings, **overrides: Unpack[ContainerOverrides])
         cursors=cursors,
         access=project_access,
     )
-    for service in (operations, notifications, idempotency, undo, organization):
+    activity = ProjectActivity(clock=clock)
+    projects = Projects(
+        uow=uow,
+        clock=clock,
+        firm_id=firm_id,
+        audit=audit,
+        operations=operations,
+        activity=activity,
+        cursors=cursors,
+    )
+    membership = Membership(
+        uow=uow,
+        clock=clock,
+        audit=audit,
+        activity=activity,
+        directory=organization,
+        cursors=cursors,
+        person_ref_key=_derived_key(signing_key, b"relaxai/person-ref"),
+    )
+    invitations = Invitations(
+        uow=uow,
+        clock=clock,
+        firm_id=firm_id,
+        audit=audit,
+        activity=activity,
+        directory=organization,
+        notifications=notifications,
+        cursors=cursors,
+        invite_base_url=settings.web.base_url,
+    )
+    lifecycle = ProjectLifecycle(
+        uow=uow,
+        clock=clock,
+        firm_id=firm_id,
+        access=access,
+        audit=audit,
+        operations=operations,
+        notifications=notifications,
+        queue=queue,
+        directory=organization,
+        purgers=overrides["purgers"] if "purgers" in overrides else default_purgers(uow),
+        hooks=overrides.get("lifecycle_hooks", ()),
+        zone=ZoneInfo(settings.projects.firm_timezone),
+    )
+    for service in (
+        operations, notifications, idempotency, undo, organization, invitations, lifecycle,
+    ):  # fmt: skip
         services.register(service)
 
     return Container(
@@ -217,4 +313,10 @@ def build_container(settings: Settings, **overrides: Unpack[ContainerOverrides])
         operations=operations,
         notifications=notifications,
         email=email,
+        project_access=access,
+        projects=projects,
+        activity=activity,
+        membership=membership,
+        invitations=invitations,
+        lifecycle=lifecycle,
     )

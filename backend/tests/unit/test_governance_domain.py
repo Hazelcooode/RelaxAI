@@ -323,3 +323,20 @@ def test_meters_are_the_contract_meters() -> None:
         "OcrPages",
         "BlobBytes",
     ]
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "inv_01M556EGFNBC703D242905985S",  # nine-digit run: once mistaken for a phone number
+        "prj_01J9Z3Q8M8V3W7G2E1N4R5TSAM",  # a fixture-name-like letter run
+    ],
+)
+def test_opaque_ids_are_safe_tokens(value: str) -> None:
+    from app.modules.governance.domain import PersonalDataScreen
+
+    screen = PersonalDataScreen()
+    screen.add_names(["Sam"])
+    screen.require_safe_token(value, what="test")
+    with pytest.raises(ValueError, match="personal data"):
+        screen.require_safe_token("call-242905985", what="test")

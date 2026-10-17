@@ -16,6 +16,7 @@ from typing import Any, Final, Literal
 
 from pydantic import BaseModel
 
+from app.platform.ids import is_opaque_id
 from app.platform.schema import OmitWhenNone
 
 # --------------------------------------------------------------------------- jobs
@@ -113,7 +114,14 @@ class PersonalDataScreen:
         return any(word.lower() in self._names for word in _WORD.findall(text))
 
     def require_safe_token(self, value: str, *, what: str) -> None:
-        """Values that must be identifiers/enum-like: no spaces, no free text, no personal data."""
+        """Values that must be identifiers/enum-like: no spaces, no free text, no personal data.
+
+        An opaque identifier minted by ``new_id`` is random, so it is accepted as is: its
+        ULID can contain a nine-digit run or a three-letter run that the screen would
+        otherwise mistake for a phone number or a fixture name.
+        """
+        if is_opaque_id(value):
+            return
         if self.contains_personal_data(value):
             raise ValueError(f"{what}: value looks like personal data")
         if not _SAFE_TOKEN.match(value):
@@ -224,7 +232,9 @@ class AuditAction(StrEnum):
     MEMBERSHIP_ROLE_CHANGED = "membership.role_changed"
     MEMBERSHIP_REMOVED = "membership.removed"
     INVITATION_CREATED = "invitation.created"
+    INVITATION_RESENT = "invitation.resent"
     INVITATION_REVOKED = "invitation.revoked"
+    INVITATION_EXPIRED = "invitation.expired"
     INVITATION_ACCEPTED = "invitation.accepted"
     # content lifecycle
     SOURCE_CREATED = "source.created"
@@ -302,7 +312,9 @@ AUDIT_CATALOG: Final[Mapping[AuditAction, ActionSpec]] = {
     _A.MEMBERSHIP_ROLE_CHANGED: _spec(_C.PROJECT, "fromRole", "toRole"),
     _A.MEMBERSHIP_REMOVED: _spec(_C.PROJECT, "role"),
     _A.INVITATION_CREATED: _spec(_C.PROJECT, "role", "expiresAt"),
+    _A.INVITATION_RESENT: _spec(_C.PROJECT, "previousInvitationId", "expiresAt"),
     _A.INVITATION_REVOKED: _spec(_C.PROJECT),
+    _A.INVITATION_EXPIRED: _spec(_C.PROJECT),
     _A.INVITATION_ACCEPTED: _spec(_C.PROJECT, "role"),
     _A.SOURCE_CREATED: _spec(_C.PROJECT, "sourceType", "visibility"),
     _A.SOURCE_UPDATED: _spec(_C.PROJECT, "sourceType", "visibility"),
@@ -329,7 +341,7 @@ AUDIT_CATALOG: Final[Mapping[AuditAction, ActionSpec]] = {
     _A.FIRM_MANAGER_REJECTED: _spec(_C.GOVERNANCE, reason_required=True),
     _A.FIRM_MANAGER_REMOVED: _spec(_C.GOVERNANCE, reason_required=True),
     _A.ARCHIVAL_SCHEDULED: _spec(_C.GOVERNANCE, "executesAt"),
-    _A.ARCHIVAL_UNSCHEDULED: _spec(_C.GOVERNANCE),
+    _A.ARCHIVAL_UNSCHEDULED: _spec(_C.GOVERNANCE, "outcome"),
     _A.IDENTITY_REVEALED: _spec(_C.GOVERNANCE, "identityCaseId", reason_required=True),
     _A.IDENTITY_CASE_RESOLVED: _spec(_C.GOVERNANCE, "resolutionKind", reason_required=True),
     _A.ERASURE_REQUESTED: _spec(_C.GOVERNANCE, "channel"),

@@ -388,6 +388,25 @@ class Notifications:
 
     # ------------------------------------------------------------------ email delivery
 
+    async def send_invitation(self, *, to: str, project_name: str, link: str) -> None:
+        """Send a Project invitation to an address that has no account yet (T06).
+
+        The message holds the Project name and the acceptance link only — never the role,
+        an inviter's note, or Project content. The link carries a single-use credential, so
+        nothing is stored or queued: the caller sends inside its own transaction and a
+        provider failure (``UpstreamError``) rolls the invitation back.
+        """
+        await self._email.send(
+            EmailMessage(
+                to=to,
+                subject="You are invited to a RelaxAI Project",
+                text=(
+                    f'You have been invited to join the Project "{project_name}" on '
+                    f"RelaxAI.\n\nAccept the invitation within seven days:\n{link}"
+                ),
+            )
+        )
+
     async def deliver_email(self, notification_id: str) -> DeliveryState:
         """Send one notification's email (the ``notifications.email_deliver`` job).
 

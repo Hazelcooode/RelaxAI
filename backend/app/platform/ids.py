@@ -16,6 +16,8 @@ PREFIXES: frozenset[str] = frozenset(
         "sug", "idc", "ppl",
         # internal (T02): usage quota reservations
         "rsv",
+        # internal (T07): archival schedules, deletion requests
+        "arc", "dlr",
     }
 )  # fmt: skip
 
