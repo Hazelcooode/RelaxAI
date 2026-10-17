@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 from datetime import timedelta
-from typing import Any
 
 import pytest
 from sqlalchemy import select
 
 from app.container import Container
-from app.platform.clock import FrozenClock
 from app.modules.governance import Meter, QuotaPeriod, ReservationState
 from app.modules.governance.tables import quota_reservations
+from app.platform.clock import FrozenClock
 from app.platform.errors import QuotaExceeded
 
 

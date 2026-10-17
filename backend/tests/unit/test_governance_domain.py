@@ -239,17 +239,30 @@ def test_registry_rejects_duplicates_and_unknown_dependencies() -> None:
 
     reg = JobRegistry()
     reg.handler(
-        "x", payload=GoodPayload, max_attempts=1, concurrency=1, priority=Priority.LOW,
+        "x",
+        payload=GoodPayload,
+        max_attempts=1,
+        concurrency=1,
+        priority=Priority.LOW,
         timeout=timedelta(seconds=5),
     )(lambda ctx, payload: None)  # type: ignore[arg-type,return-value]
     with pytest.raises(ValueError, match="already registered"):
         reg.handler(
-            "x", payload=GoodPayload, max_attempts=1, concurrency=1, priority=Priority.LOW,
+            "x",
+            payload=GoodPayload,
+            max_attempts=1,
+            concurrency=1,
+            priority=Priority.LOW,
             timeout=timedelta(seconds=5),
         )(lambda ctx, payload: None)  # type: ignore[arg-type,return-value]
     reg.handler(
-        "y", payload=GoodPayload, max_attempts=1, concurrency=1, priority=Priority.LOW,
-        timeout=timedelta(seconds=5), depends_on=("nope",),
+        "y",
+        payload=GoodPayload,
+        max_attempts=1,
+        concurrency=1,
+        priority=Priority.LOW,
+        timeout=timedelta(seconds=5),
+        depends_on=("nope",),
     )(lambda ctx, payload: None)  # type: ignore[arg-type,return-value]
     with pytest.raises(ValueError, match="unregistered kinds"):
         reg.validate()

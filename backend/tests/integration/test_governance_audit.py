@@ -72,7 +72,11 @@ async def rows(container: Container) -> list[Any]:
 
 
 async def test_record_writes_actor_action_target_outcome_and_time(container: Container) -> None:
-    await record(container, reason=None, facts=SafeFacts({"fromStatus": "NotStarted", "toStatus": "InProgress"}))
+    await record(
+        container,
+        reason=None,
+        facts=SafeFacts({"fromStatus": "NotStarted", "toStatus": "InProgress"}),
+    )
     (row,) = await rows(container)
     assert row["actor_kind"] == "User"
     assert row["actor_user_id"] == "usr_avery"
@@ -110,7 +114,13 @@ async def test_record_in_a_rolled_back_transaction_leaves_no_event(container: Co
 
 
 async def test_system_actor_and_correlation_id(container: Container) -> None:
-    await record(container, actor=SystemActor("Scheduler"), action=AuditAction.RETENTION_EXECUTED, project_id=None, target=TargetRef("retention_policy", "audit_1y"))
+    await record(
+        container,
+        actor=SystemActor("Scheduler"),
+        action=AuditAction.RETENTION_EXECUTED,
+        project_id=None,
+        target=TargetRef("retention_policy", "audit_1y"),
+    )
     (row,) = await rows(container)
     assert row["actor_kind"] == "System"
     assert row["actor_user_id"] is None
@@ -119,7 +129,12 @@ async def test_system_actor_and_correlation_id(container: Container) -> None:
 
 
 async def test_client_collaborator_actions_never_store_a_real_name(container: Container) -> None:
-    await record(container, actor=CLIENT, action=AuditAction.DOCUMENT_ACCEPTED, facts=SafeFacts({"sourceType": "Upload", "format": "Pdf"}))
+    await record(
+        container,
+        actor=CLIENT,
+        action=AuditAction.DOCUMENT_ACCEPTED,
+        facts=SafeFacts({"sourceType": "Upload", "format": "Pdf"}),
+    )
     (row,) = await rows(container)
     assert row["actor_label"] == "Client Collaborator"
     assert "Riley" not in str(row["actor_label"])
@@ -216,8 +231,14 @@ def test_registered_fixture_names_are_flagged() -> None:
 
 @pytest.fixture
 async def seeded(container: Container, frozen_clock: FrozenClock) -> Container:
-    await record(container, action=AuditAction.PROJECT_CREATED, target=TargetRef("project", PROJECT_A))
-    await record(container, action=AuditAction.DOCUMENT_ACCEPTED, facts=SafeFacts({"sourceType": "Upload", "format": "Docx"}))
+    await record(
+        container, action=AuditAction.PROJECT_CREATED, target=TargetRef("project", PROJECT_A)
+    )
+    await record(
+        container,
+        action=AuditAction.DOCUMENT_ACCEPTED,
+        facts=SafeFacts({"sourceType": "Upload", "format": "Docx"}),
+    )
     await record(container, action=AuditAction.TASK_STATUS_CHANGED, project_id=PROJECT_B)
     await record(
         container,
@@ -240,9 +261,7 @@ async def seeded(container: Container, frozen_clock: FrozenClock) -> Container:
 
 
 async def test_project_administrator_sees_only_their_project(seeded: Container) -> None:
-    page = await seeded.audit.query(
-        ProjectAdministratorViewer(PROJECT_A), AuditFilters(), None
-    )
+    page = await seeded.audit.query(ProjectAdministratorViewer(PROJECT_A), AuditFilters(), None)
     assert {e.action for e in page.items} == {"project.created", "document.accepted"}
     assert {e.project_id for e in page.items} == {PROJECT_A}
 
@@ -322,7 +341,15 @@ async def test_audit_view_model_serialises_camel_case(seeded: Container) -> None
     page = await seeded.audit.query(PlatformOperatorViewer(), AuditFilters(), None)
     dumped = page.items[0].model_dump(mode="json")
     assert set(dumped) == {
-        "auditId", "at", "actor", "action", "target", "projectId", "outcome", "reason", "facts",
+        "auditId",
+        "at",
+        "actor",
+        "action",
+        "target",
+        "projectId",
+        "outcome",
+        "reason",
+        "facts",
     }
 
 

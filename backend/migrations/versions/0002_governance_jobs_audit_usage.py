@@ -45,10 +45,24 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name="pk_audit_events"),
         schema=S,
     )
-    op.create_index("ix_audit_events_firm_id_at", "audit_events", ["firm_id", sa.text("at DESC")], schema=S)
-    op.create_index("ix_audit_events_project_id_at", "audit_events", ["project_id", sa.text("at DESC")], schema=S)
-    op.create_index("ix_audit_events_action_at", "audit_events", ["action", sa.text("at DESC")], schema=S)
-    op.create_index("ix_audit_events_category_at", "audit_events", ["firm_id", "category", sa.text("at DESC")], schema=S)
+    op.create_index(
+        "ix_audit_events_firm_id_at", "audit_events", ["firm_id", sa.text("at DESC")], schema=S
+    )
+    op.create_index(
+        "ix_audit_events_project_id_at",
+        "audit_events",
+        ["project_id", sa.text("at DESC")],
+        schema=S,
+    )
+    op.create_index(
+        "ix_audit_events_action_at", "audit_events", ["action", sa.text("at DESC")], schema=S
+    )
+    op.create_index(
+        "ix_audit_events_category_at",
+        "audit_events",
+        ["firm_id", "category", sa.text("at DESC")],
+        schema=S,
+    )
 
     op.create_table(
         "jobs",
@@ -80,7 +94,12 @@ def upgrade() -> None:
         sa.UniqueConstraint("kind", "idempotency_key", name="uq_jobs_kind_idempotency_key"),
         schema=S,
     )
-    op.create_index("ix_jobs_state_run_at_priority", "jobs", ["state", "run_at", sa.text("priority DESC")], schema=S)
+    op.create_index(
+        "ix_jobs_state_run_at_priority",
+        "jobs",
+        ["state", "run_at", sa.text("priority DESC")],
+        schema=S,
+    )
     op.create_index("ix_jobs_operation_id", "jobs", ["operation_id"], schema=S)
     op.create_index("ix_jobs_kind_state", "jobs", ["kind", "state"], schema=S)
 
@@ -118,7 +137,10 @@ def upgrade() -> None:
         schema=S,
     )
     op.create_index(
-        "ix_quota_reservations_active", "quota_reservations", ["firm_id", "meter", "period", "state"], schema=S
+        "ix_quota_reservations_active",
+        "quota_reservations",
+        ["firm_id", "meter", "period", "state"],
+        schema=S,
     )
     op.create_index("ix_quota_reservations_job_id", "quota_reservations", ["job_id"], schema=S)
 

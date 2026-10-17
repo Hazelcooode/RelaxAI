@@ -107,7 +107,9 @@ class UsageGuard:
             QuotaPeriod(self._settings.period),
         )
 
-    async def set_quota(self, tx: Tx, meter: Meter, quota: int, period: QuotaPeriod | None = None) -> None:
+    async def set_quota(
+        self, tx: Tx, meter: Meter, quota: int, period: QuotaPeriod | None = None
+    ) -> None:
         """Operator quota change (``PUT /operator/quotas/{meter}``, T32)."""
         if quota < 0:
             raise ValueError("quota must be >= 0")

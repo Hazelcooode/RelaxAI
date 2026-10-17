@@ -219,7 +219,9 @@ class Audit:
         if cursor is not None:
             position = self._cursors.decode(cursor)
             if not isinstance(position.k, str):
-                raise ValidationFailed([FieldIssue(field="cursor", code="invalid", message="Invalid cursor.")])
+                raise ValidationFailed(
+                    [FieldIssue(field="cursor", code="invalid", message="Invalid cursor.")]
+                )
             at = datetime.fromisoformat(position.k)
             conditions.append(or_(e.at < at, and_(e.at == at, e.id < position.id)))
 
@@ -259,4 +261,3 @@ def _to_view(row: Any) -> AuditEventView:
         reason=row["reason"],
         facts=row["facts"],
     )
-

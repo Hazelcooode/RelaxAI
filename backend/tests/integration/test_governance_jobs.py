@@ -12,19 +12,19 @@ from pydantic import BaseModel
 from sqlalchemy import insert, select
 
 from app.container import Container, build_container
-from app.platform.clock import FrozenClock
 from app.modules.governance import (
-    Worker,
     JobState,
     Meter,
     Priority,
     QuotaPeriod,
     Scheduler,
     SweepPayload,
+    Worker,
 )
-from app.modules.governance.registry import DEFAULT_REGISTRY, JobRegistry, sweep_idempotency_key
+from app.modules.governance.registry import JobRegistry, sweep_idempotency_key
 from app.modules.governance.tables import jobs, quota_policies
 from app.modules.governance.worker import TickResult
+from app.platform.clock import FrozenClock
 from tests.handlers import (
     KIND_CHAIN_A,
     KIND_CHAIN_B,
@@ -130,7 +130,7 @@ async def test_same_key_different_kind_creates_a_second_job(
 
 
 async def test_unknown_kind_and_mismatched_payload_are_programming_errors(
-    container: Container
+    container: Container,
 ) -> None:
     with pytest.raises(ValueError, match="no handler registered"):
         async with container.uow() as tx:
@@ -199,13 +199,10 @@ async def test_per_kind_concurrency_is_respected(
 
     async with isolated_container.uow() as tx:
         done = (
-            (
-                await tx.session.execute(
-                    select(jobs.c.state, jobs.c.lease_owner).where(jobs.c.kind == KIND_SLOW)
-                )
+            await tx.session.execute(
+                select(jobs.c.state, jobs.c.lease_owner).where(jobs.c.kind == KIND_SLOW)
             )
-            .all()
-        )
+        ).all()
     assert {row.state for row in done} == {JobState.SUCCEEDED.value}
     assert {row.lease_owner for row in done} == {None}
 
@@ -271,9 +268,7 @@ async def test_retry_then_success(
     worker = make_worker()
     assert await worker.run_once() == 1
     async with container.uow() as tx:
-        row = (
-            (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
-        )
+        row = (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
     assert row["state"] == JobState.RETRYING.value
     assert row["attempts"] == 1
     assert row["last_error_code"] == "FlakyUpstream"
@@ -284,18 +279,14 @@ async def test_retry_then_success(
     frozen_clock.advance(first_delay)
     await worker.run_once()
     async with container.uow() as tx:
-        row = (
-            (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
-        )
+        row = (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
     second_delay = row["run_at"] - container.clock.now()
     assert second_delay > first_delay
 
     frozen_clock.advance(second_delay)
     await worker.run_once()
     async with container.uow() as tx:
-        row = (
-            (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
-        )
+        row = (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
         assert await count_effects(tx.session, "flaky") == 1
     assert row["state"] == JobState.SUCCEEDED.value
     assert row["attempts"] == 2
@@ -305,14 +296,14 @@ async def test_upstream_retry_after_is_honoured(
     container: Container, enqueue: Enqueue, make_worker: Callable[..., Worker], effects: Any
 ) -> None:
     job_id = await enqueue(
-        KIND_FLAKY, FlakyPayload(effect_id="throttled", fail_times=1, retry_after_seconds=45), key="t"
+        KIND_FLAKY,
+        FlakyPayload(effect_id="throttled", fail_times=1, retry_after_seconds=45),
+        key="t",
     )
     worker = make_worker()
     await worker.run_once()
     async with container.uow() as tx:
-        row = (
-            (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
-        )
+        row = (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
     assert row["run_at"] - container.clock.now() == timedelta(seconds=45)
 
 
@@ -328,9 +319,7 @@ async def test_failure_after_max_attempts(
         await worker.run_once()
         frozen_clock.advance(timedelta(minutes=10))
     async with container.uow() as tx:
-        row = (
-            (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
-        )
+        row = (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
     assert row["state"] == JobState.FAILED.value
     assert row["attempts"] == 3
     assert row["last_error_code"] == "FlakyUpstream"
@@ -345,9 +334,7 @@ async def test_terminal_error_stops_retrying(
     worker = make_worker()
     assert await worker.run_once() == 1
     async with container.uow() as tx:
-        row = (
-            (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
-        )
+        row = (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
     assert row["state"] == JobState.FAILED.value
     assert row["attempts"] == 1  # terminal on the first attempt, max_attempts was 5
     assert row["last_error_code"] == "UnsupportedFormat"
@@ -407,9 +394,7 @@ async def test_expired_lease_is_requeued_and_a_second_attempt_completes(
     assert (await isolated_container.store.reap_expired_leases()) == 1
 
     async with isolated_container.uow() as tx:
-        row = (
-            (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
-        )
+        row = (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
     assert row["state"] == JobState.RETRYING.value
     assert row["attempts"] == 0  # a dead worker did not consume an attempt
     assert row["last_error_code"] == "LeaseExpired"
@@ -417,9 +402,7 @@ async def test_expired_lease_is_requeued_and_a_second_attempt_completes(
     healthy = worker_for(isolated_container, owner="worker-healthy")
     assert await healthy.run_until_idle() == 1
     async with isolated_container.uow() as tx:
-        row = (
-            (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
-        )
+        row = (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
         assert await count_effects(tx.session, "lease") == 1
     assert row["state"] == JobState.SUCCEEDED.value
 
@@ -439,9 +422,7 @@ async def test_a_reaped_worker_cannot_overwrite_the_new_outcome(
 
     assert await isolated_container.store.succeed(claimed.id, stalled.owner) is False
     async with isolated_container.uow() as tx:
-        row = (
-            (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
-        )
+        row = (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
     assert row["state"] == JobState.RETRYING.value
 
 
@@ -455,9 +436,7 @@ async def test_wait_for_user_then_resume(
     worker = make_worker()
     assert await worker.run_once() == 1
     async with container.uow() as tx:
-        row = (
-            (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
-        )
+        row = (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
     assert row["state"] == JobState.WAITING_FOR_USER.value
     assert row["waiting_action"] == "Review"
     assert row["waiting_destination"]["path"].startswith("/projects/")
@@ -465,17 +444,13 @@ async def test_wait_for_user_then_resume(
     async with container.uow() as tx:
         await container.queue.resume(tx, job_id)
     async with container.uow() as tx:
-        row = (
-            (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
-        )
+        row = (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
     assert row["state"] == JobState.QUEUED.value
     assert row["waiting_action"] is None
     # Resuming re-runs the handler, which parks again: a waiting handler must be re-entrant.
     await worker.run_once()
     async with container.uow() as tx:
-        row = (
-            (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
-        )
+        row = (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
     assert row["state"] == JobState.WAITING_FOR_USER.value
 
 
@@ -486,12 +461,8 @@ async def test_depends_on_holds_a_chained_job_until_its_dependency_finishes(
     container: Container, enqueue: Enqueue, make_worker: Callable[..., Worker], effects: Any
 ) -> None:
     operation_id = "op_01J9Z3Q8M8V3W7G2E1N4R5T6Y7"
-    await enqueue(
-        KIND_CHAIN_A, ChainPayload(effect_id="a"), key="a", operation_id=operation_id
-    )
-    await enqueue(
-        KIND_CHAIN_B, ChainPayload(effect_id="b"), key="b", operation_id=operation_id
-    )
+    await enqueue(KIND_CHAIN_A, ChainPayload(effect_id="a"), key="a", operation_id=operation_id)
+    await enqueue(KIND_CHAIN_B, ChainPayload(effect_id="b"), key="b", operation_id=operation_id)
     worker = make_worker(kinds=[KIND_CHAIN_B])
     assert await worker.run_once() == 0  # B waits for A
 
@@ -522,9 +493,8 @@ async def test_enqueue_next_runs_under_the_same_operation(
     await worker.run_until_idle()
     async with container.uow() as tx:
         rows = (
-            (await tx.session.execute(select(jobs.c.kind, jobs.c.operation_id, jobs.c.state)))
-            .all()
-        )
+            await tx.session.execute(select(jobs.c.kind, jobs.c.operation_id, jobs.c.state))
+        ).all()
     assert len(rows) == 2
     assert {row.operation_id for row in rows} == {operation_id}
     assert {row.state for row in rows} == {JobState.SUCCEEDED.value}
@@ -546,9 +516,7 @@ async def test_paid_job_fails_once_when_quota_is_exhausted(
     worker = make_worker()
     assert await worker.run_once() == 1
     async with container.uow() as tx:
-        row = (
-            (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
-        )
+        row = (await tx.session.execute(select(jobs).where(jobs.c.id == job_id))).mappings().one()
         assert await count_effects(tx.session, "paid") == 0
     assert row["state"] == JobState.FAILED.value
     assert row["attempts"] == 0  # never ran: no retry loop against an exhausted budget
@@ -618,11 +586,7 @@ async def test_scheduler_enqueues_due_sweeps_once_per_firing(
     assert tick.sweeps_enqueued == 1
     async with swept.uow() as tx:
         row = (
-            (
-                await tx.session.execute(
-                    select(jobs).where(jobs.c.kind == "test.daily")
-                )
-            )
+            (await tx.session.execute(select(jobs).where(jobs.c.kind == "test.daily")))
             .mappings()
             .one()
         )
@@ -654,11 +618,11 @@ async def test_scheduler_enqueues_due_sweeps_once_per_firing(
 async def test_scheduler_reaps_and_promotes(
     container: Container, enqueue: Enqueue, scheduler: Scheduler, frozen_clock: FrozenClock
 ) -> None:
-    await enqueue(KIND_OK, OkPayload(), key="promote", run_at=frozen_clock.now() + timedelta(minutes=1))
+    await enqueue(
+        KIND_OK, OkPayload(), key="promote", run_at=frozen_clock.now() + timedelta(minutes=1)
+    )
     async with container.uow() as tx:
-        await tx.session.execute(
-            jobs.update().values(state=JobState.RETRYING.value)
-        )
+        await tx.session.execute(jobs.update().values(state=JobState.RETRYING.value))
     frozen_clock.advance(timedelta(minutes=1))
     tick = await scheduler.tick()
     assert tick.promoted == 1
@@ -671,7 +635,10 @@ async def test_scheduler_reaps_and_promotes(
 
 
 async def test_queue_stats_are_content_free(
-    container: Container, enqueue: Enqueue, make_worker: Callable[..., Worker], frozen_clock: FrozenClock,
+    container: Container,
+    enqueue: Enqueue,
+    make_worker: Callable[..., Worker],
+    frozen_clock: FrozenClock,
 ) -> None:
     await enqueue(KIND_OK, OkPayload(), key="pending")
     await enqueue(KIND_TERMINAL, TerminalPayload(), key="failed")
@@ -709,9 +676,7 @@ async def test_resume_rejects_unknown_and_active_jobs(
             await container.queue.resume(tx, job_id)
 
 
-async def test_quota_policy_rows_override_settings(
-    container: Container, enqueue: Enqueue
-) -> None:
+async def test_quota_policy_rows_override_settings(container: Container, enqueue: Enqueue) -> None:
     from sqlalchemy.dialects.postgresql import insert as pg_insert
 
     async with container.uow() as tx:
